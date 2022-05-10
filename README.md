@@ -1,0 +1,1 @@
+# go-open-api-generator
