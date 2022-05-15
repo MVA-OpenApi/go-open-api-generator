@@ -22,6 +22,7 @@ func deleteFolderRecursively(path string) {
 	check(err)
 }
 
+// Creates a file in a specific path.
 func generateFile(path string) {
 	file, err := os.Create(path)
 
