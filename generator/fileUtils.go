@@ -23,12 +23,10 @@ func deleteFolderRecursively(path string) {
 }
 
 // Creates a file in a specific path.
-// Returns a pointer of the created file.
-// Responsibility for closing is on the caller.
-func generateFile(path string) *os.File {
+func generateFile(path string) {
 	file, err := os.Create(path)
 
 	check(err)
 
-	return file
+	defer file.Close()
 }

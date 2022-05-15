@@ -2,6 +2,7 @@ package generator
 
 import (
 	"fmt"
+	"os"
 	"path"
 	"path/filepath"
 	"text/template"
@@ -29,16 +30,22 @@ func CreateBuildDirectory() {
 
 func GenerateServerTemplate(port int16) {
 	vars := PortConfig{port}
-
-	file := generateFile(filepath.Join(Build, Cmd, "main.go"))
-	defer file.Close()
-
+	fileName := "main.go"
 	templateFile := "templates/server.go.tmpl"
 	templateName := path.Base(templateFile)
-	tmpl := template.Must(template.New(templateName).ParseFiles(templateFile))
 
-	err := tmpl.Execute(file, vars)
-	if err != nil {
-		fmt.Println(err.Error())
+	// Create main.go and open it
+	generateFile(filepath.Join(Build, Cmd, fileName))
+	file, fErr := os.Open(fileName)
+	if fErr != nil {
+		fmt.Println(fErr.Error())
+	}
+	defer file.Close()
+
+	// Parse the tempalte and write into main.go
+	tmpl := template.Must(template.New(templateName).ParseFiles(templateFile))
+	tmplErr := tmpl.Execute(file, vars)
+	if tmplErr != nil {
+		fmt.Println(tmplErr.Error())
 	}
 }
