@@ -6,4 +6,5 @@ import (
 
 func main() {
 	gen.CreateBuildDirectory()
+	gen.GenerateServerTemplate(3000)
 }
