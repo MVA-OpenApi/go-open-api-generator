@@ -1,10 +1,9 @@
 package main
 
 import (
-	gen "go-open-api-generator/generator"
+	cli "go-open-api-generator/cli"
 )
 
 func main() {
-	gen.CreateBuildDirectory()
-	gen.GenerateServerTemplate(3000)
+	cli.Execute()
 }
