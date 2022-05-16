@@ -35,8 +35,9 @@ func GenerateServerTemplate(port int16) {
 	templateName := path.Base(templateFile)
 
 	// Create main.go and open it
-	generateFile(filepath.Join(Build, Cmd, fileName))
-	file, fErr := os.Open(fileName)
+	mainPath := filepath.Join(Build, Cmd, fileName)
+	generateFile(mainPath)
+	file, fErr := os.OpenFile(mainPath, os.O_WRONLY, os.ModeAppend)
 	if fErr != nil {
 		fmt.Println(fErr.Error())
 	}
