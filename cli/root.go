@@ -2,10 +2,11 @@ package cli
 
 import (
 	"fmt"
-	"os"
-
 	gen "go-open-api-generator/generator"
+	"os"
+	"strconv"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/spf13/cobra"
 )
 
@@ -13,35 +14,43 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "genoapi generate [input file path] [flags]",
 	Short: "Create server and client API code from OpenApi Spec",
-	Long: "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
+	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 }
 
 var generateCmd = &cobra.Command{
 	Use:   "generate [input file path]",
 	Short: "Create server and client API code from OpenApi Spec",
 	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
-	Args: cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		
+
 		input_path := args[0]
-		
+
 		if !CheckIfFileExists(input_path) {
 			fmt.Println("No valid input file path given.")
 			return
 		}
-		
-		jsonFile, err := os.Open(input_path)
-		
-		if err != nil {
-			fmt.Println(err)
-		}
-		
-		defer jsonFile.Close()
 
-		// TODO parse OPenAPI spec
+		spec, err := openapi3.NewLoader().LoadFromFile(input_path)
+		if err != nil {
+			fmt.Println("Error loading File", err)
+			return
+		}
+
+		// TODO use proper logging
+
+		fmt.Printf("Loaded Spec \"%s\" (Version %s)\n", spec.Info.Title, spec.Info.Version)
+		fmt.Println("With available operations: ")
+		for path, path_item := range spec.Paths {
+			for op_string, op := range path_item.Operations() {
+				fmt.Printf("%s %s: %s\n", op_string, path, op.Summary)
+			}
+		}
+
+		port, _ := strconv.Atoi(spec.Servers[0].Variables["port"].Default)
 
 		gen.CreateBuildDirectory()
-		gen.GenerateServerTemplate(3000)
+		gen.GenerateServerTemplate(int16(port))
 	},
 }
 
