@@ -31,9 +31,18 @@ var generateCmd = &cobra.Command{
 			return
 		}
 
-		spec, err := openapi3.NewLoader().LoadFromFile(input_path)
+		loader := openapi3.NewLoader()
+
+		spec, err := loader.LoadFromFile(input_path)
 		if err != nil {
 			fmt.Println("Error loading File", err)
+			return
+		}
+
+		err = spec.Validate(loader.Context)
+		if err != nil {
+			fmt.Println("Not a valid OpenAPI Spec!")
+			fmt.Println(err)
 			return
 		}
 
