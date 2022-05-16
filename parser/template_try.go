@@ -1,12 +1,12 @@
-package main
+package parser
 
 import (
-        "fmt"   
-        "os"
-        "text/template"
-        "encoding/json"
-        "io/ioutil"
-        "bytes"
+	"bytes"
+	"encoding/json"
+	"fmt"
+	"io/ioutil"
+	"os"
+	"text/template"
 )
 
 // func createFile(name string) (fp *os.File){
@@ -29,14 +29,14 @@ func parseFileName(filename string) string {
     return s
 }
 
-func main() {
-    file, _ := ioutil.ReadFile("example.json")  
+func Parse(jsonFile string, templateFile string) {
+    file, _ := ioutil.ReadFile(jsonFile)  
     m := map[string]interface{}{}
     err := json.Unmarshal(file, &m)
     if err != nil {
         fmt.Println(err.Error)
     }
-    filename := parseFileName("example.json")
+    filename := parseFileName(jsonFile)
     fileToWrite, err := os.Create(filename+".go")
     // filename := parseFileName("example.json")
     var restArray []string
@@ -51,7 +51,7 @@ func main() {
         } 
     }
     for i := 0; i < len(restArray); i++{
-        temp, err := template.ParseFiles("template_example.tmpl")
+        temp, err := template.ParseFiles(templateFile)
         if err != nil {
             fmt.Println(err)
         }

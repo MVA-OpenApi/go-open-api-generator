@@ -3,46 +3,67 @@ package cli
 import (
 	"fmt"
 	"os"
+	"strconv"
 
 	gen "go-open-api-generator/generator"
+	par "go-open-api-generator/parser"
 
 	"github.com/spf13/cobra"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "genoapi generate [input file path] [flags]",
+	Use:   "generator [command] [flags]",
 	Short: "Create server and client API code from OpenApi Spec",
 	Long: "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 }
 
 var generateCmd = &cobra.Command{
-	Use:   "generate [input file path]",
+	Use:   "generate [port]",
 	Short: "Create server and client API code from OpenApi Spec",
 	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 	Args: cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+
+		port := args[0]
+
+		// check if port is an int
+		portNumber, err := strconv.Atoi(port);
+		if  err != nil {
+			fmt.Printf("Given port has to be an integer.")
+			return
+		}
+
+		gen.CreateBuildDirectory()
+		gen.GenerateServerTemplate(int16(portNumber))
+	},
+}
+
+var parseCmd = &cobra.Command {
+	Use: "parse [OpenAPI spec path] [template path]",
+	Short: "Parse the input files for later use.",
+	Long: "Parse the OpenAPI Specifiaction file (JSON Format) and the template file",
+	Args: cobra.ExactArgs(2),
+	Run: func(cmd *cobra.Command, args []string) {
+		spec_path := args[0]
+		template_path := args[1]
 		
-		input_path := args[0]
-		
-		if !CheckIfFileExists(input_path) {
-			fmt.Println("No valid input file path given.")
+		// check if spec file exists
+		if !CheckIfFileExists(spec_path) {
+			fmt.Println("Specification file doesn't exists.")
+			return
+		}
+
+		// check if template file exists
+		if !CheckIfFileExists(template_path) {
+			fmt.Println("Template file doesn't exists.")
 			return
 		}
 		
-		jsonFile, err := os.Open(input_path)
-		
-		if err != nil {
-			fmt.Println(err)
-		}
-		
-		defer jsonFile.Close()
-
-		// TODO parse OPenAPI spec
-
-		gen.CreateBuildDirectory()
-		gen.GenerateServerTemplate(3000)
+		// call parser function
+		par.Parse(spec_path, template_path)
 	},
+
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.
@@ -55,16 +76,6 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.example.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
 	// add sub commands
-	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(generateCmd, parseCmd)
 }
