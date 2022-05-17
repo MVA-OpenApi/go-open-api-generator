@@ -12,13 +12,13 @@ import (
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "genoapi generate [input file path] [flags]",
+	Use:   "generator [command] [flags]",
 	Short: "Create server and client API code from OpenApi Spec",
 	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 }
 
 var generateCmd = &cobra.Command{
-	Use:   "generate [input file path]",
+	Use:   "generate [port]",
 	Short: "Create server and client API code from OpenApi Spec",
 	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 	Args:  cobra.ExactArgs(1),
@@ -73,16 +73,6 @@ func Execute() {
 }
 
 func init() {
-	// Here you will define your flags and configuration settings.
-	// Cobra supports persistent flags, which, if defined here,
-	// will be global for your application.
-
-	// rootCmd.PersistentFlags().StringVar(&cfgFile, "config", "", "config file (default is $HOME/.example.yaml)")
-
-	// Cobra also supports local flags, which will only run
-	// when this action is called directly.
-	rootCmd.Flags().BoolP("toggle", "t", false, "Help message for toggle")
-
 	// add sub commands
-	rootCmd.AddCommand(generateCmd)
+	rootCmd.AddCommand(generateCmd, parseCmd)
 }
