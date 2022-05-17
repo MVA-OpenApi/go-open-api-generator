@@ -2,12 +2,11 @@ package cli
 
 import (
 	"fmt"
+	gen "go-open-api-generator/generator"
 	"os"
 	"strconv"
 
-	gen "go-open-api-generator/generator"
-	par "go-open-api-generator/parser"
-
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/spf13/cobra"
 )
 
@@ -15,55 +14,53 @@ import (
 var rootCmd = &cobra.Command{
 	Use:   "generator [command] [flags]",
 	Short: "Create server and client API code from OpenApi Spec",
-	Long: "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
+	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 }
 
 var generateCmd = &cobra.Command{
 	Use:   "generate [port]",
 	Short: "Create server and client API code from OpenApi Spec",
 	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
-	Args: cobra.ExactArgs(1),
+	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
 
-		port := args[0]
+		input_path := args[0]
 
-		// check if port is an int
-		portNumber, err := strconv.Atoi(port);
-		if  err != nil {
-			fmt.Printf("Given port has to be an integer.")
+		if !CheckIfFileExists(input_path) {
+			fmt.Println("No valid input file path given.")
 			return
 		}
+
+		loader := openapi3.NewLoader()
+
+		spec, err := loader.LoadFromFile(input_path)
+		if err != nil {
+			fmt.Println("Error loading File", err)
+			return
+		}
+
+		err = spec.Validate(loader.Context)
+		if err != nil {
+			fmt.Println("Not a valid OpenAPI Spec!")
+			fmt.Println(err)
+			return
+		}
+
+		// TODO use proper logging
+
+		fmt.Printf("Loaded Spec \"%s\" (Version %s)\n", spec.Info.Title, spec.Info.Version)
+		fmt.Println("With available operations: ")
+		for path, path_item := range spec.Paths {
+			for op_string, op := range path_item.Operations() {
+				fmt.Printf("%s %s: %s\n", op_string, path, op.Summary)
+			}
+		}
+
+		port, _ := strconv.Atoi(spec.Servers[0].Variables["port"].Default)
 
 		gen.CreateBuildDirectory()
-		gen.GenerateServerTemplate(int16(portNumber))
+		gen.GenerateServerTemplate(int16(port))
 	},
-}
-
-var parseCmd = &cobra.Command {
-	Use: "parse [OpenAPI spec path] [template path]",
-	Short: "Parse the input files for later use.",
-	Long: "Parse the OpenAPI Specifiaction file (JSON Format) and the template file",
-	Args: cobra.ExactArgs(2),
-	Run: func(cmd *cobra.Command, args []string) {
-		spec_path := args[0]
-		template_path := args[1]
-		
-		// check if spec file exists
-		if !CheckIfFileExists(spec_path) {
-			fmt.Println("Specification file doesn't exists.")
-			return
-		}
-
-		// check if template file exists
-		if !CheckIfFileExists(template_path) {
-			fmt.Println("Template file doesn't exists.")
-			return
-		}
-		
-		// call parser function
-		par.Parse(spec_path, template_path)
-	},
-
 }
 
 // Execute adds all child commands to the root command and sets flags appropriately.

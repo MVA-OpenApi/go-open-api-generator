@@ -86,6 +86,15 @@ paths:
           description: Store with given id wasn't found.
     put:
       summary: Updates a store with the given store id.
+      parameters:
+        - name: id
+          in: path
+          description: Id of store to update.
+          required: true
+          schema:
+            type: string
+            format: uuid
+
       requestBody:
         description: A Store object.
         required: true
@@ -93,6 +102,7 @@ paths:
           application/json:
             schema:
               $ref: "#/components/schemas/Store"
+              
       responses:
         "200":
           description: The store was updated successfully.
