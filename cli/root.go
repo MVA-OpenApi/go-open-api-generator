@@ -2,6 +2,7 @@ package cli
 
 import (
 	"fmt"
+	fs "go-open-api-generator/fileUtils"
 	gen "go-open-api-generator/generator"
 	"os"
 	"strconv"
@@ -26,7 +27,7 @@ var generateCmd = &cobra.Command{
 
 		input_path := args[0]
 
-		if !CheckIfFileExists(input_path) {
+		if !fs.CheckIfFileExists(input_path) {
 			fmt.Println("No valid input file path given.")
 			return
 		}
@@ -74,5 +75,5 @@ func Execute() {
 
 func init() {
 	// add sub commands
-	rootCmd.AddCommand(generateCmd, parseCmd)
+	rootCmd.AddCommand(generateCmd)
 }

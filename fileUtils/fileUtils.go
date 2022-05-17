@@ -10,23 +10,28 @@ func check(e error) {
 	}
 }
 
-func generateFolder(path string) {
+func GenerateFolder(path string) {
 	err := os.MkdirAll(path, os.ModePerm)
 
 	check(err)
 }
 
-func deleteFolderRecursively(path string) {
+func DeleteFolderRecursively(path string) {
 	err := os.RemoveAll(path)
 
 	check(err)
 }
 
 // Creates a file in a specific path.
-func generateFile(path string) {
+func GenerateFile(path string) {
 	file, err := os.Create(path)
 
 	check(err)
 
 	defer file.Close()
+}
+
+func CheckIfFileExists(path string) bool {
+	_, err := os.Stat(path)
+	return err == nil
 }
