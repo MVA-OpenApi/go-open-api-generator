@@ -6,6 +6,8 @@ import (
 	"path"
 	"path/filepath"
 	"text/template"
+
+	fs "go-open-api-generator/fileUtils"
 )
 
 const (
@@ -20,12 +22,12 @@ type PortConfig struct {
 
 func CreateBuildDirectory() {
 	// Removes previously generated folder structure
-	deleteFolderRecursively(Build)
+	fs.DeleteFolderRecursively(Build)
 
 	// Generates basic folder structure
-	generateFolder(Build)
-	generateFolder(filepath.Join(Build, Cmd))
-	generateFolder(filepath.Join(Build, Pkg))
+	fs.GenerateFolder(Build)
+	fs.GenerateFolder(filepath.Join(Build, Cmd))
+	fs.GenerateFolder(filepath.Join(Build, Pkg))
 }
 
 func GenerateServerTemplate(port int16) {
@@ -36,7 +38,7 @@ func GenerateServerTemplate(port int16) {
 
 	// Create main.go and open it
 	mainPath := filepath.Join(Build, Cmd, fileName)
-	generateFile(mainPath)
+	fs.GenerateFile(mainPath)
 	file, fErr := os.OpenFile(mainPath, os.O_WRONLY, os.ModeAppend)
 	if fErr != nil {
 		fmt.Println(fErr.Error())
