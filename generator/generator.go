@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"fmt"
 	"os"
 	"path"
 	"path/filepath"
@@ -74,14 +73,16 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 	fs.GenerateFile(mainPath)
 	file, fErr := os.OpenFile(mainPath, os.O_WRONLY, os.ModeAppend)
 	if fErr != nil {
-		fmt.Println(fErr.Error())
+		log.Fatal().Err(fErr).Msg("Failed creating main.go file")
+		panic(fErr)
 	}
 	defer file.Close()
 
-	// Parse the tempalte and write into main.go
+	// Parse the template and write into main.go
 	tmpl := template.Must(template.New(templateName).ParseFiles(templateFile))
 	tmplErr := tmpl.Execute(file, vars)
 	if tmplErr != nil {
-		fmt.Println(tmplErr.Error())
+		log.Fatal().Err(tmplErr).Msg("Failed executing template")
+		panic(tmplErr)
 	}
 }
