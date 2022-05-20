@@ -35,6 +35,8 @@ func GenerateServer(openAPIFilePath string) {
 	generateServerTemplate(spec.Servers[0].Variables["port"])
 
 	generateHandlerFuncs(spec)
+
+	log.Info().Msg("Created all files successfully.")
 }
 
 func createBuildDirectory() {
@@ -46,6 +48,8 @@ func createBuildDirectory() {
 	fs.GenerateFolder(filepath.Join(Build, Cmd))
 	fs.GenerateFolder(filepath.Join(Build, Pkg))
 	fs.GenerateFolder(filepath.Join(Build, Pkg, HandlerPkg))
+
+	log.Info().Msg("Created project build directory.")
 }
 
 func generateServerTemplate(portSpec *openapi3.ServerVariable) {
@@ -69,6 +73,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 	filePath := filepath.Join(Build, Cmd, fileName)
 	templateFile := "templates/server.go.tmpl"
 
+	log.Info().Msg("Creating main.go at port " + strconv.Itoa(int(conf.Port)))
 	createFileFromTemplate(filePath, templateFile, conf)
 }
 
@@ -134,4 +139,6 @@ func createFileFromTemplate(filePath string, tmplPath string, config any) {
 		log.Fatal().Err(tmplErr).Msg("Failed executing template")
 		panic(tmplErr)
 	}
+
+	log.Info().Msg("CREATE " + filePath)
 }
