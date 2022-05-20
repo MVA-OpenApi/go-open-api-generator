@@ -49,7 +49,7 @@ func createBuildDirectory() {
 }
 
 func generateServerTemplate(portSpec *openapi3.ServerVariable) {
-	vars := PortConfig{DefaultPort}
+	conf := PortConfig{DefaultPort}
 
 	if portSpec != nil {
 		portStr := portSpec.Default
@@ -61,31 +61,15 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 		if err != nil {
 			log.Warn().Msg("Failed to convert port, using 3000 instead")
 		} else {
-			vars.Port = int16(port)
+			conf.Port = int16(port)
 		}
 	}
 
 	fileName := "main.go"
+	filePath := filepath.Join(Build, Cmd, fileName)
 	templateFile := "templates/server.go.tmpl"
-	templateName := path.Base(templateFile)
 
-	// Create main.go and open it
-	mainPath := filepath.Join(Build, Cmd, fileName)
-	fs.GenerateFile(mainPath)
-	file, fErr := os.OpenFile(mainPath, os.O_WRONLY, os.ModeAppend)
-	if fErr != nil {
-		log.Fatal().Err(fErr).Msg("Failed creating main.go file")
-		panic(fErr)
-	}
-	defer file.Close()
-
-	// Parse the template and write into main.go
-	tmpl := template.Must(template.New(templateName).ParseFiles(templateFile))
-	tmplErr := tmpl.Execute(file, vars)
-	if tmplErr != nil {
-		log.Fatal().Err(tmplErr).Msg("Failed executing template")
-		panic(tmplErr)
-	}
+	createFileFromTemplate(filePath, templateFile, conf)
 }
 
 func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
@@ -99,26 +83,10 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 	}
 
 	fileName := conf.OperationID + ".go"
+	filePath := filepath.Join(Build, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handlerFunc.go.tmpl"
-	templateName := path.Base(templateFile)
 
-	// Create handler func file and open it
-	mainPath := filepath.Join(Build, Pkg, HandlerPkg, fileName)
-	fs.GenerateFile(mainPath)
-	file, fErr := os.OpenFile(mainPath, os.O_WRONLY, os.ModeAppend)
-	if fErr != nil {
-		log.Fatal().Err(fErr).Msg("Failed creating file")
-		panic(fErr)
-	}
-	defer file.Close()
-
-	// Parse the template and write into main.go
-	tmpl := template.Must(template.New(templateName).ParseFiles(templateFile))
-	tmplErr := tmpl.Execute(file, conf)
-	if tmplErr != nil {
-		log.Fatal().Err(tmplErr).Msg("Failed executing template")
-		panic(tmplErr)
-	}
+	createFileFromTemplate(filePath, templateFile, conf)
 
 	return conf
 }
@@ -141,22 +109,27 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	}
 
 	fileName := "handler.go"
+	filePath := filepath.Join(Build, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handler.go.tmpl"
-	templateName := path.Base(templateFile)
 
-	// Create handler.go and open it
-	mainPath := filepath.Join(Build, Pkg, HandlerPkg, fileName)
-	fs.GenerateFile(mainPath)
-	file, fErr := os.OpenFile(mainPath, os.O_WRONLY, os.ModeAppend)
+	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func createFileFromTemplate(filePath string, tmplPath string, config any) {
+	templateName := path.Base(tmplPath)
+
+	// Create file and open it
+	fs.GenerateFile(filePath)
+	file, fErr := os.OpenFile(filePath, os.O_WRONLY, os.ModeAppend)
 	if fErr != nil {
 		log.Fatal().Err(fErr).Msg("Failed creating file")
 		panic(fErr)
 	}
 	defer file.Close()
 
-	// Parse the template and write into main.go
-	tmpl := template.Must(template.New(templateName).ParseFiles(templateFile))
-	tmplErr := tmpl.Execute(file, conf)
+	// Parse the template and write into file
+	tmpl := template.Must(template.New(templateName).ParseFiles(tmplPath))
+	tmplErr := tmpl.Execute(file, config)
 	if tmplErr != nil {
 		log.Fatal().Err(tmplErr).Msg("Failed executing template")
 		panic(tmplErr)
