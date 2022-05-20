@@ -1,0 +1,13 @@
+package handler
+
+import "net/http"
+
+// {{ .Summary }}
+func {{ .OperationID }}(c echo.Context) error {
+    {{ with .Responses }}
+        {{- range . }}
+            // {{ .StatusCode }} => {{ .Desciption }} 
+        {{- end }} 
+    {{ end }}
+	return c.String(http.StatusNotImplemented, "Temporary handler stub.")
+}
