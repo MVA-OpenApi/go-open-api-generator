@@ -1,6 +1,10 @@
 package handler
 
-import "net/http"
+import (
+    "net/http"
+
+    "github.com/labstack/echo/v4"
+)
 
 // {{ .Summary }}
 func {{ .OperationID }}(c echo.Context) error {
