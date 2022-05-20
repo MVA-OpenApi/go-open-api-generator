@@ -5,22 +5,40 @@ import (
 	"os"
 	"path"
 	"path/filepath"
+	"strconv"
 	"text/template"
 
 	fs "go-open-api-generator/fileUtils"
+	"go-open-api-generator/parser"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/rs/zerolog/log"
 )
 
 const (
-	Build = "build"
-	Cmd   = "cmd"
-	Pkg   = "pkg"
+	Build       = "build"
+	Cmd         = "cmd"
+	Pkg         = "pkg"
+	DefaultPort = 3000
 )
 
 type PortConfig struct {
 	Port int16
 }
 
-func CreateBuildDirectory() {
+func GenerateServer(openAPIFilePath string) {
+	spec, err := parser.ParseOpenAPISpecFile(openAPIFilePath)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load OpenAPI spec file")
+		return
+	}
+
+	createBuildDirectory()
+
+	generateServerTemplate(spec.Servers[0].Variables["port"])
+}
+
+func createBuildDirectory() {
 	// Removes previously generated folder structure
 	fs.DeleteFolderRecursively(Build)
 
@@ -30,8 +48,23 @@ func CreateBuildDirectory() {
 	fs.GenerateFolder(filepath.Join(Build, Pkg))
 }
 
-func GenerateServerTemplate(port int16) {
-	vars := PortConfig{port}
+func generateServerTemplate(portSpec *openapi3.ServerVariable) {
+	vars := PortConfig{DefaultPort}
+
+	if portSpec != nil {
+		portStr := portSpec.Default
+		if portSpec.Enum != nil {
+			portStr = portSpec.Enum[0]
+		}
+
+		port, err := strconv.Atoi(portStr)
+		if err != nil {
+			log.Warn().Msg("Failed to convert port, using 3000 instead")
+		} else {
+			vars.Port = int16(port)
+		}
+	}
+
 	fileName := "main.go"
 	templateFile := "templates/server.go.tmpl"
 	templateName := path.Base(templateFile)
