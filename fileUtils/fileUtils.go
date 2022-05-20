@@ -2,10 +2,13 @@ package generator
 
 import (
 	"os"
+
+	"github.com/rs/zerolog/log"
 )
 
 func check(e error) {
 	if e != nil {
+		log.Error().Err(e).Msg("")
 		panic(e)
 	}
 }
