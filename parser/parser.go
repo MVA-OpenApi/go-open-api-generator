@@ -20,14 +20,14 @@ func ParseOpenAPISpecFile(path string) (*openapi3.T, error) {
 		return nil, err
 	}
 
-	log.Info().Msg("OpenAPI Spec file loaded successfully")
+	log.Info().Msg("OpenAPI Spec file loaded successfully.")
 
 	err = spec.Validate(loader.Context)
 	if err != nil {
 		return nil, err
 	}
 
-	log.Info().Msg("OpenAPI Spec file validated successfully")
+	log.Info().Msg("OpenAPI Spec file validated successfully.")
 
 	return spec, err
 }
