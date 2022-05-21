@@ -36,8 +36,6 @@ func GenerateServer(openAPIFilePath string) {
 
 	generateHandlerFuncs(spec)
 
-	GenerateModFile()
-
 	log.Info().Msg("Created all files successfully.")
 }
 
