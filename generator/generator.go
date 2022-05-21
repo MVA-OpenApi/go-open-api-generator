@@ -16,7 +16,7 @@ import (
 )
 
 var (
-	project = ""
+	projectDestination string
 )
 
 const (
@@ -26,14 +26,14 @@ const (
 	DefaultPort = 3000
 )
 
-func GenerateServer(openAPIPath string, projectPath string, projectName string) {
+func  GenerateServer(openAPIPath string, projectPath string) {
 	spec, err := parser.ParseOpenAPISpecFile(openAPIPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load OpenAPI spec file")
 		return
 	}
 
-	project = filepath.Join(projectPath, projectName)
+	projectDestination = projectPath
 
 	createprojectPathDirectory()
 
@@ -46,15 +46,15 @@ func GenerateServer(openAPIPath string, projectPath string, projectName string) 
 
 func createprojectPathDirectory() {
 	// Removes previously generated folder structure
-	fs.DeleteFolderRecursively(project)
+	fs.DeleteFolderRecursively(projectDestination)
 
 	// Generates basic folder structure
-	fs.GenerateFolder(project)
-	fs.GenerateFolder(filepath.Join(project, Cmd))
-	fs.GenerateFolder(filepath.Join(project, Pkg))
-	fs.GenerateFolder(filepath.Join(project, Pkg, HandlerPkg))
+	fs.GenerateFolder(projectDestination)
+	fs.GenerateFolder(filepath.Join(projectDestination, Cmd))
+	fs.GenerateFolder(filepath.Join(projectDestination, Pkg))
+	fs.GenerateFolder(filepath.Join(projectDestination, Pkg, HandlerPkg))
 
-	log.Info().Msg("Created project project directory.")
+	log.Info().Msg("Created project directory.")
 }
 
 func generateServerTemplate(portSpec *openapi3.ServerVariable) {
@@ -75,7 +75,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 	}
 
 	fileName := "main.go"
-	filePath := filepath.Join(project, Cmd, fileName)
+	filePath := filepath.Join(projectDestination, Cmd, fileName)
 	templateFile := "templates/server.go.tmpl"
 
 	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
@@ -93,7 +93,7 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 	}
 
 	fileName := conf.OperationID + ".go"
-	filePath := filepath.Join(project, Pkg, HandlerPkg, fileName)
+	filePath := filepath.Join(projectDestination, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handlerFunc.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
@@ -119,7 +119,7 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	}
 
 	fileName := "handler.go"
-	filePath := filepath.Join(project, Pkg, HandlerPkg, fileName)
+	filePath := filepath.Join(projectDestination, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handler.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)

@@ -42,20 +42,20 @@ var generateCmd = &cobra.Command{
 			log.Error().Msg("No OpenAPI path given, add -o <OpenAPI Specificatio path> flag.")
 			return
 		}		
+		
+		projectDestination := filepath.Join(projectPath, projectName) 
 
 		log.Info().Msg("Generating project...")
-		gen.GenerateServer(openAPIPath, projectPath, projectName)
-
-		cmdDestination := filepath.Join(projectPath, projectName) 
+		gen.GenerateServer(openAPIPath, projectDestination)
 
 		log.Info().Msg("Running external commands...")
 		log.Info().Msg("RUN `go mod init " + projectName + "`")
-		extCmd.RunCommand("go mod init " + projectName, cmdDestination)
+		extCmd.RunCommand("go mod init " + projectName, projectDestination)
 		log.Info().Msg("RUN `go mod tidy`")
-		extCmd.RunCommand("go mod tidy", cmdDestination)
+		extCmd.RunCommand("go mod tidy", projectDestination)
 		log.Info().Msg("RUN `go fmt ./...`")
-		extCmd.RunCommand("go fmt ./...", cmdDestination)
-		log.Info().Msg("DONE project created at: " + cmdDestination)
+		extCmd.RunCommand("go fmt ./...", projectDestination)
+		log.Info().Msg("DONE project created at: " + projectDestination)
 	},
 }
 
