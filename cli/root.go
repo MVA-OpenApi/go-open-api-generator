@@ -17,13 +17,13 @@ var openAPIPath string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
-	Use:   "generator [command] [flags]",
+	Use:   "generator [flags]",
 	Short: "Create server and client API code from OpenApi Spec",
 	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 }
 
 var generateCmd = &cobra.Command{
-	Use:   "generate [open-api-file-path]",
+	Use:   "generate -o <path to OpenAPI Specification>",
 	Short: "Create server and client API code from OpenApi Spec",
 	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 	Run: func(cmd *cobra.Command, args []string) {
@@ -39,7 +39,7 @@ var generateCmd = &cobra.Command{
 
 		// template path
 		if openAPIPath == "" {
-			log.Error().Msg("No OpenAPI path given, add -t <template path> flag.")
+			log.Error().Msg("No OpenAPI path given, add -o <OpenAPI Specificatio path> flag.")
 			return
 		}		
 
