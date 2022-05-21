@@ -4,6 +4,7 @@ import (
 	extCmd "go-open-api-generator/cmd"
 	gen "go-open-api-generator/generator"
 	"os"
+	"path/filepath"
 
 	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
@@ -43,14 +44,18 @@ var generateCmd = &cobra.Command{
 		}		
 
 		log.Info().Msg("Generating project...")
-		gen.GenerateServer(openAPIPath)
+		gen.GenerateServer(openAPIPath, projectPath, projectName)
+
+		cmdDestination := filepath.Join(projectPath, projectName) 
 
 		log.Info().Msg("Running external commands...")
+		log.Info().Msg("RUN `go mod init " + projectName + "`")
+		extCmd.RunCommand("go mod init " + projectName, cmdDestination)
 		log.Info().Msg("RUN `go mod tidy`")
-		extCmd.RunCommand("go mod tidy", projectPath)
+		extCmd.RunCommand("go mod tidy", cmdDestination)
 		log.Info().Msg("RUN `go fmt ./...`")
-		extCmd.RunCommand("go fmt ./...", projectPath)
-		log.Info().Msg("DONE project created at: " + projectPath)
+		extCmd.RunCommand("go fmt ./...", cmdDestination)
+		log.Info().Msg("DONE project created at: " + cmdDestination)
 	},
 }
 
@@ -65,7 +70,7 @@ func Execute() {
 
 func init() {
 	// add generate flags
-	generateCmd.Flags().StringVarP(&projectPath, "output project path", "o", "", "path where generated code gets stored")
+	generateCmd.Flags().StringVarP(&projectPath, "output project path", "p", "", "path where generated code gets stored")
 	generateCmd.Flags().StringVarP(&projectName, "name of the generated project", "n", "", "module name of generated code")
 	generateCmd.Flags().StringVarP(&openAPIPath, "OpenAPI path", "o", "", "path where the OpenAPI Specification is stored")
 
