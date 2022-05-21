@@ -63,7 +63,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 
 		port, err := strconv.Atoi(portStr)
 		if err != nil {
-			log.Warn().Msg("Failed to convert port, using 3000 instead")
+			log.Warn().Msg("Failed to convert port, using 3000 instead.")
 		} else {
 			conf.Port = int16(port)
 		}
@@ -73,7 +73,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 	filePath := filepath.Join(Build, Cmd, fileName)
 	templateFile := "templates/server.go.tmpl"
 
-	log.Info().Msg("Creating main.go at port " + strconv.Itoa(int(conf.Port)))
+	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
 	createFileFromTemplate(filePath, templateFile, conf)
 }
 
@@ -127,7 +127,7 @@ func createFileFromTemplate(filePath string, tmplPath string, config any) {
 	fs.GenerateFile(filePath)
 	file, fErr := os.OpenFile(filePath, os.O_WRONLY, os.ModeAppend)
 	if fErr != nil {
-		log.Fatal().Err(fErr).Msg("Failed creating file")
+		log.Fatal().Err(fErr).Msg("Failed creating file.")
 		panic(fErr)
 	}
 	defer file.Close()
@@ -136,7 +136,7 @@ func createFileFromTemplate(filePath string, tmplPath string, config any) {
 	tmpl := template.Must(template.New(templateName).ParseFiles(tmplPath))
 	tmplErr := tmpl.Execute(file, config)
 	if tmplErr != nil {
-		log.Fatal().Err(tmplErr).Msg("Failed executing template")
+		log.Fatal().Err(tmplErr).Msg("Failed executing template.")
 		panic(tmplErr)
 	}
 

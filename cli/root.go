@@ -1,9 +1,11 @@
 package cli
 
 import (
+	extCmd "go-open-api-generator/cmd"
 	gen "go-open-api-generator/generator"
 	"os"
 
+	"github.com/rs/zerolog/log"
 	"github.com/spf13/cobra"
 )
 
@@ -20,7 +22,18 @@ var generateCmd = &cobra.Command{
 	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 	Args:  cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
-		gen.GenerateServer(args[0])
+		openAPIFilepath := args[0]
+		projectPath := "build" // TODO: get path from CLI
+
+		log.Info().Msg("Generating project...")
+		gen.GenerateServer(openAPIFilepath)
+
+		log.Info().Msg("Running external commands...")
+		log.Info().Msg("RUN `go mod tidy`")
+		extCmd.RunCommand("go mod tidy", projectPath)
+		log.Info().Msg("RUN `go fmt ./...`")
+		extCmd.RunCommand("go fmt ./...", projectPath)
+		log.Info().Msg("DONE project created at: " + projectPath)
 	},
 }
 
