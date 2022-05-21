@@ -12,7 +12,7 @@ import (
 // variables for the flags
 var projectPath string
 var projectName string
-var templatePath string
+var openAPIPath string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -37,13 +37,13 @@ var generateCmd = &cobra.Command{
 		}
 
 		// template path
-		if templatePath == "" {
-			log.Error().Msg("No template path given, add -t <template path> flag.")
+		if openAPIPath == "" {
+			log.Error().Msg("No OpenAPI path given, add -t <template path> flag.")
 			return
 		}		
 
 		log.Info().Msg("Generating project...")
-		gen.GenerateServer(templatePath)
+		gen.GenerateServer(openAPIPath)
 
 		log.Info().Msg("Running external commands...")
 		log.Info().Msg("RUN `go mod tidy`")
@@ -65,9 +65,9 @@ func Execute() {
 
 func init() {
 	// add generate flags
-	generateCmd.Flags().StringVarP(&projectPath, "output project path", "p", "", "path where generated code gets stored")
+	generateCmd.Flags().StringVarP(&projectPath, "output project path", "o", "", "path where generated code gets stored")
 	generateCmd.Flags().StringVarP(&projectName, "name of the generated project", "n", "", "module name of generated code")
-	generateCmd.Flags().StringVarP(&templatePath, "template path", "t", "", "path where template is stored")
+	generateCmd.Flags().StringVarP(&openAPIPath, "OpenAPI path", "o", "", "path where the OpenAPI Specification is stored")
 
 	// add generate command
 	rootCmd.AddCommand(generateCmd)
