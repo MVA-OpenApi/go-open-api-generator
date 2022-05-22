@@ -83,8 +83,8 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 	conf.Summary = op.Summary
 	conf.OperationID = op.OperationID
 
-	for _, responseRef := range op.Responses {
-		conf.Responses = append(conf.Responses, ResponseConfig{responseRef.Ref, *responseRef.Value.Description})
+	for resKey, resRef := range op.Responses {
+		conf.Responses = append(conf.Responses, ResponseConfig{resKey, *resRef.Value.Description})
 	}
 
 	fileName := conf.OperationID + ".go"
