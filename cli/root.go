@@ -46,7 +46,7 @@ var generateCmd = &cobra.Command{
 		projectDestination := filepath.Join(projectPath, projectName) 
 
 		log.Info().Msg("Generating project...")
-		gen.GenerateServer(openAPIPath, projectDestination)
+		gen.GenerateServer(openAPIPath, projectDestination, projectName)
 
 		log.Info().Msg("Running external commands...")
 		log.Info().Msg("RUN `go mod init " + projectName + "`")

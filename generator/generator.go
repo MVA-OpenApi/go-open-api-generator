@@ -26,7 +26,7 @@ const (
 	DefaultPort = 3000
 )
 
-func  GenerateServer(openAPIPath string, projectPath string) {
+func  GenerateServer(openAPIPath string, projectPath string, moduleName string) {
 	spec, err := parser.ParseOpenAPISpecFile(openAPIPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load OpenAPI spec file")
@@ -37,7 +37,7 @@ func  GenerateServer(openAPIPath string, projectPath string) {
 
 	createprojectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"])
+	generateServerTemplate(spec.Servers[0].Variables["port"], moduleName)
 
 	generateHandlerFuncs(spec)
 
@@ -57,8 +57,8 @@ func createprojectPathDirectory() {
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable) {
-	conf := PortConfig{DefaultPort}
+func generateServerTemplate(portSpec *openapi3.ServerVariable, moduleName string) {
+	conf := ServerConfig{Port: DefaultPort, ModuleName: moduleName}
 
 	if portSpec != nil {
 		portStr := portSpec.Default
