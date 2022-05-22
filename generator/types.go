@@ -1,7 +1,8 @@
 package generator
 
-type PortConfig struct {
-	Port int16
+type ServerConfig struct {
+	Port       int16
+	ModuleName string
 }
 
 type ResponseConfig struct {
