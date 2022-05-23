@@ -127,7 +127,7 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	createFileFromTemplate(filePath, templateFile, conf)
 }
 
-func createFileFromTemplate(filePath string, tmplPath string, config any) {
+func createFileFromTemplate(filePath string, tmplPath string, config interface{}) {
 	templateName := path.Base(tmplPath)
 
 	// Create file and open it
