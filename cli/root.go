@@ -29,22 +29,22 @@ var generateCmd = &cobra.Command{
 	Run: func(cmd *cobra.Command, args []string) {
 		// output project path
 		if projectPath == "" {
-			projectPath,_ = os.UserHomeDir()
+			projectPath, _ = os.UserHomeDir()
 		}
 
 		// output project name
 		if projectName == "" {
 			projectName = "build"
-		}		
-		
-		projectDestination := filepath.Join(projectPath, projectName) 
+		}
+
+		projectDestination := filepath.Join(projectPath, projectName)
 
 		log.Info().Msg("Generating project...")
 		gen.GenerateServer(openAPIPath, projectDestination, projectName)
 
 		log.Info().Msg("Running external commands...")
 		log.Info().Msg("RUN `go mod init " + projectName + "`")
-		extCmd.RunCommand("go mod init " + projectName, projectDestination)
+		extCmd.RunCommand("go mod init "+projectName, projectDestination)
 		log.Info().Msg("RUN `go mod tidy`")
 		extCmd.RunCommand("go mod tidy", projectDestination)
 		log.Info().Msg("RUN `go fmt ./...`")
@@ -74,4 +74,3 @@ func init() {
 	// add generate command
 	rootCmd.AddCommand(generateCmd)
 }
-

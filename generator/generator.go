@@ -26,7 +26,7 @@ const (
 	DefaultPort = 3000
 )
 
-func  GenerateServer(openAPIPath string, projectPath string, moduleName string) {
+func GenerateServer(openAPIPath string, projectPath string, moduleName string) {
 	spec, err := parser.ParseOpenAPISpecFile(openAPIPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load OpenAPI spec file")
