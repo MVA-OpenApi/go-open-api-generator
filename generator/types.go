@@ -1,5 +1,10 @@
 package generator
 
+type ProjectConfig struct {
+	Name string
+	Path string
+}
+
 type ServerConfig struct {
 	Port       int16
 	ModuleName string

@@ -68,8 +68,10 @@ func init() {
 	generateCmd.Flags().StringVarP(&projectName, "name-of-generated-project", "n", "", "module name of generated code (default is 'build')")
 	generateCmd.Flags().StringVarP(&openAPIPath, "openapi-path", "o", "", "path where the OpenAPI Specification is stored")
 
-	// make openAPIPath mandatox
-	generateCmd.MarkFlagRequired("openapi-path")
+	// make openAPIPath mandatory
+	if err := generateCmd.MarkFlagRequired("openapi-path"); err != nil {
+		log.Error().Err(err)
+	}
 
 	// add generate command
 	rootCmd.AddCommand(generateCmd)

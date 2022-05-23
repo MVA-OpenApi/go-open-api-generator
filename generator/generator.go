@@ -15,15 +15,15 @@ import (
 	"github.com/rs/zerolog/log"
 )
 
-var (
-	projectDestination string
-)
-
 const (
 	Cmd         = "cmd"
 	Pkg         = "pkg"
 	HandlerPkg  = "handler"
 	DefaultPort = 3000
+)
+
+var (
+	config ProjectConfig
 )
 
 func GenerateServer(openAPIPath string, projectPath string, moduleName string) {
@@ -33,32 +33,34 @@ func GenerateServer(openAPIPath string, projectPath string, moduleName string) {
 		return
 	}
 
-	projectDestination = projectPath
+	// Init project config
+	config.Name = moduleName
+	config.Path = projectPath
 
-	createprojectPathDirectory()
+	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"], moduleName)
+	generateServerTemplate(spec.Servers[0].Variables["port"])
 
 	generateHandlerFuncs(spec)
 
 	log.Info().Msg("Created all files successfully.")
 }
 
-func createprojectPathDirectory() {
+func createProjectPathDirectory() {
 	// Removes previously generated folder structure
-	fs.DeleteFolderRecursively(projectDestination)
+	fs.DeleteFolderRecursively(config.Path)
 
 	// Generates basic folder structure
-	fs.GenerateFolder(projectDestination)
-	fs.GenerateFolder(filepath.Join(projectDestination, Cmd))
-	fs.GenerateFolder(filepath.Join(projectDestination, Pkg))
-	fs.GenerateFolder(filepath.Join(projectDestination, Pkg, HandlerPkg))
+	fs.GenerateFolder(config.Path)
+	fs.GenerateFolder(filepath.Join(config.Path, Cmd))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
 
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, moduleName string) {
-	conf := ServerConfig{Port: DefaultPort, ModuleName: moduleName}
+func generateServerTemplate(portSpec *openapi3.ServerVariable) {
+	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name}
 
 	if portSpec != nil {
 		portStr := portSpec.Default
@@ -75,7 +77,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, moduleName string
 	}
 
 	fileName := "main.go"
-	filePath := filepath.Join(projectDestination, Cmd, fileName)
+	filePath := filepath.Join(config.Path, Cmd, fileName)
 	templateFile := "templates/server.go.tmpl"
 
 	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
@@ -93,7 +95,7 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 	}
 
 	fileName := conf.OperationID + ".go"
-	filePath := filepath.Join(projectDestination, Pkg, HandlerPkg, fileName)
+	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handlerFunc.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
@@ -119,13 +121,13 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	}
 
 	fileName := "handler.go"
-	filePath := filepath.Join(projectDestination, Pkg, HandlerPkg, fileName)
+	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handler.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
 }
 
-func createFileFromTemplate(filePath string, tmplPath string, config any) {
+func createFileFromTemplate(filePath string, tmplPath string, config interface{}) {
 	templateName := path.Base(tmplPath)
 
 	// Create file and open it
