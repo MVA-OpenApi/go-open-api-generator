@@ -22,7 +22,7 @@ var rootCmd = &cobra.Command{
 }
 
 var generateCmd = &cobra.Command{
-	Use:     "generate -o <path to OpenAPI Specification>",
+	Use:     "generate <path to OpenAPI Specification>",
 	Short:   "Create server and client API code from OpenApi Spec",
 	Long:    "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
 	Example: "generate ./stores.yaml -o ./outputPath -n StoresAPI",
