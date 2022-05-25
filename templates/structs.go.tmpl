@@ -1,0 +1,10 @@
+{{ with .StructDefs }}
+  {{- range . }}
+    type {{ .StructName }} struct {
+    {{ with .TypeDefs }}
+      {{- range . }}
+        {{ .TypeName }} {{ .Type }}
+      {{ end }}
+    {{ end }}
+  {{ end }}
+{{ end }}
