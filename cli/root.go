@@ -13,7 +13,6 @@ import (
 // variables for the flags
 var projectPath string
 var projectName string
-var openAPIPath string
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -23,10 +22,14 @@ var rootCmd = &cobra.Command{
 }
 
 var generateCmd = &cobra.Command{
-	Use:   "generate -o <path to OpenAPI Specification>",
-	Short: "Create server and client API code from OpenApi Spec",
-	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
+	Use:     "generate <path to OpenAPI Specification>",
+	Short:   "Create server and client API code from OpenApi Spec",
+	Long:    "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
+	Example: "generate ./stores.yaml -o ./outputPath -n StoresAPI",
+	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
+		openAPIPath := args[0]
+
 		// output project path
 		if projectPath == "" {
 			projectPath, _ = os.UserHomeDir()
@@ -64,14 +67,8 @@ func Execute() {
 
 func init() {
 	// add generate flags
-	generateCmd.Flags().StringVarP(&projectPath, "output-project-path", "p", "", "path where generated code gets stored (default is the home directory)")
+	generateCmd.Flags().StringVarP(&projectPath, "output-project-path", "o", "", "path where generated code gets stored (default is the home directory)")
 	generateCmd.Flags().StringVarP(&projectName, "name-of-generated-project", "n", "", "module name of generated code (default is 'build')")
-	generateCmd.Flags().StringVarP(&openAPIPath, "openapi-path", "o", "", "path where the OpenAPI Specification is stored")
-
-	// make openAPIPath mandatory
-	if err := generateCmd.MarkFlagRequired("openapi-path"); err != nil {
-		log.Error().Err(err)
-	}
 
 	// add generate command
 	rootCmd.AddCommand(generateCmd)
