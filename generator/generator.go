@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"errors"
 	"os"
 	"path"
 	"path/filepath"
@@ -26,20 +27,20 @@ var (
 	config ProjectConfig
 )
 
-func GenerateServer(openAPIPath string, projectPath string, moduleName string) {
-	spec, err := parser.ParseOpenAPISpecFile(openAPIPath)
+func GenerateServer(conf GeneratorConfig) {
+	spec, err := parser.ParseOpenAPISpecFile(conf.OpenAPIPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load OpenAPI spec file")
 		return
 	}
 
 	// Init project config
-	config.Name = moduleName
-	config.Path = projectPath
+	config.Name = conf.ModuleName
+	config.Path = conf.OutputPath
 
 	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"])
+	generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger)
 
 	generateHandlerFuncs(spec)
 
@@ -59,8 +60,8 @@ func createProjectPathDirectory() {
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable) {
-	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name}
+func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool) {
+	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name, UseLogger: useLogger}
 
 	if portSpec != nil {
 		portStr := portSpec.Default
@@ -74,6 +75,12 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 		} else {
 			conf.Port = int16(port)
 		}
+	} else {
+		log.Warn().Msg("No port field was found, using 3000 instead.")
+	}
+
+	if useLogger {
+		log.Info().Msg("Adding logging middleware.")
 	}
 
 	fileName := "main.go"
@@ -84,13 +91,27 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 	createFileFromTemplate(filePath, templateFile, conf)
 }
 
-func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
+func generateHandlerFuncStub(op *openapi3.Operation, method string, path string) (OperationConfig, error) {
 	var conf OperationConfig
 
+	conf.Method = method
+
 	conf.Summary = op.Summary
+	if op.Summary == "" {
+		log.Warn().Msg("No summary found for endpoint: " + method + " " + path)
+	}
+
 	conf.OperationID = op.OperationID
+	if op.OperationID == "" {
+		log.Error().Msg("No operation ID found for endpoint: " + method + " " + path)
+		return conf, errors.New("no operation id, can't create function")
+	}
 
 	for resKey, resRef := range op.Responses {
+		if statusCode, err := strconv.Atoi(resKey); err != nil || !(statusCode >= 100 && statusCode < 600) {
+			log.Warn().Msg("Status code " + resKey + " for endpoint " + method + " " + path + " is not a valid status code.")
+		}
+
 		conf.Responses = append(conf.Responses, ResponseConfig{resKey, *resRef.Value.Description})
 	}
 
@@ -100,7 +121,7 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 
 	createFileFromTemplate(filePath, templateFile, conf)
 
-	return conf
+	return conf, nil
 }
 
 func generateHandlerFuncs(spec *openapi3.T) {
@@ -111,8 +132,11 @@ func generateHandlerFuncs(spec *openapi3.T) {
 		newPath.Path = strings.ReplaceAll(strings.ReplaceAll(path, "{", ":"), "}", "")
 
 		for method, op := range pathObj.Operations() {
-			opConfig := generateHandlerFuncStub(op)
-			opConfig.Method = method
+			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path)
+
+			if err != nil {
+				log.Err(err).Msg("Skipping generation of handler function for endpoint " + method + " " + path)
+			}
 
 			newPath.Operations = append(newPath.Operations, opConfig)
 		}

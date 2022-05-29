@@ -11,8 +11,11 @@ import (
 )
 
 // variables for the flags
-var projectPath string
-var projectName string
+var (
+	projectPath string
+	projectName string
+	loggerFlag  bool
+)
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
@@ -41,9 +44,10 @@ var generateCmd = &cobra.Command{
 		}
 
 		projectDestination := filepath.Join(projectPath, projectName)
+		config := gen.GeneratorConfig{OpenAPIPath: openAPIPath, OutputPath: projectDestination, ModuleName: projectName, UseLogger: loggerFlag}
 
 		log.Info().Msg("Generating project...")
-		gen.GenerateServer(openAPIPath, projectDestination, projectName)
+		gen.GenerateServer(config)
 
 		log.Info().Msg("Running external commands...")
 		log.Info().Msg("RUN `go mod init " + projectName + "`")
@@ -67,8 +71,9 @@ func Execute() {
 
 func init() {
 	// add generate flags
-	generateCmd.Flags().StringVarP(&projectPath, "output-project-path", "o", "", "path where generated code gets stored (default is the home directory)")
-	generateCmd.Flags().StringVarP(&projectName, "name-of-generated-project", "n", "", "module name of generated code (default is 'build')")
+	generateCmd.Flags().StringVarP(&projectPath, "output", "o", "", "path where generated code gets stored (default is the home directory)")
+	generateCmd.Flags().StringVarP(&projectName, "name", "n", "", "module name of generated code (default is 'build')")
+	generateCmd.Flags().BoolVarP(&loggerFlag, "logger", "l", false, "use logging middleware in generated code (default is 'false')")
 
 	// add generate command
 	rootCmd.AddCommand(generateCmd)
