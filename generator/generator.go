@@ -27,20 +27,20 @@ var (
 	config ProjectConfig
 )
 
-func GenerateServer(openAPIPath string, projectPath string, moduleName string) {
-	spec, err := parser.ParseOpenAPISpecFile(openAPIPath)
+func GenerateServer(conf GeneratorConfig) {
+	spec, err := parser.ParseOpenAPISpecFile(conf.OpenAPIPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load OpenAPI spec file")
 		return
 	}
 
 	// Init project config
-	config.Name = moduleName
-	config.Path = projectPath
+	config.Name = conf.ModuleName
+	config.Path = conf.OutputPath
 
 	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"])
+	generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger)
 
 	generateHandlerFuncs(spec)
 
@@ -60,8 +60,8 @@ func createProjectPathDirectory() {
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable) {
-	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name}
+func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool) {
+	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name, UseLogger: useLogger}
 
 	if portSpec != nil {
 		portStr := portSpec.Default
@@ -77,6 +77,10 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 		}
 	} else {
 		log.Warn().Msg("No port field was found, using 3000 instead.")
+	}
+
+	if useLogger {
+		log.Info().Msg("Adding logging middleware.")
 	}
 
 	fileName := "main.go"
