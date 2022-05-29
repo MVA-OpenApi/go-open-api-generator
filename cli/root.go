@@ -44,7 +44,7 @@ var generateCmd = &cobra.Command{
 		}
 
 		projectDestination := filepath.Join(projectPath, projectName)
-		config := gen.GeneratorConfig{openAPIPath, projectDestination, projectName, loggerFlag}
+		config := gen.GeneratorConfig{OpenAPIPath: openAPIPath, OutputPath: projectDestination, ModuleName: projectName, UseLogger: loggerFlag}
 
 		log.Info().Msg("Generating project...")
 		gen.GenerateServer(config)
