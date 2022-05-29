@@ -43,6 +43,8 @@ func GenerateServer(openAPIPath string, projectPath string, moduleName string) {
 
 	generateHandlerFuncs(spec)
 
+	GenerateTypes(spec)
+
 	log.Info().Msg("Created all files successfully.")
 }
 
@@ -105,7 +107,6 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 
 func generateHandlerFuncs(spec *openapi3.T) {
 	var conf HandlerConfig
-
 	for path, pathObj := range spec.Paths {
 		var newPath PathConfig
 		newPath.Path = strings.ReplaceAll(strings.ReplaceAll(path, "{", ":"), "}", "")
@@ -148,4 +149,45 @@ func createFileFromTemplate(filePath string, tmplPath string, config interface{}
 	}
 
 	log.Info().Msg("CREATE " + filePath)
+}
+
+type TypeDefinition struct {
+	TypeName string
+	Type string
+}
+
+func GenerateTypes(spec *openapi3.T) {
+	schemaDefs := generateStructDefs(&spec.Components.Schemas)
+	var conf TypeConfig
+	conf.schemaDefs = schemaDefs
+	tmpl := template.Must(template.New("structs").ParseFiles("templates/structs.go.tmpl"))
+	tmplErr := tmpl.Execute(os.Stdout, conf)
+	if tmplErr != nil {
+		log.Fatal().Err(tmplErr).Msg("Failed executing template.")
+		panic(tmplErr)
+	}
+}
+	
+func generateStructDefs(schemas *openapi3.Schemas) map[string][]TypeDefinition{
+	schemaDefs := make(map[string][]TypeDefinition, len(*schemas))
+	
+	for schemaName, ref := range *schemas {
+		schemaDefs[schemaName] = generateTypeDefs(&ref.Value.Properties)
+	}
+	return schemaDefs
+}
+
+
+
+func generateTypeDefs(properties *openapi3.Schemas) []TypeDefinition {
+	typeDefs := make([]TypeDefinition, len(*properties))
+	
+	for name, property := range *properties {
+		propertyDef := TypeDefinition{
+			name,
+			property.Value.Type,
+		}
+		typeDefs = append(typeDefs, propertyDef)	
+	}
+	return typeDefs
 }

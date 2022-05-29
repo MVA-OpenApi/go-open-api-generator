@@ -1,5 +1,5 @@
-{{ with .StructDefs }}
-  {{- range . }}
+{{ with .SchemaDefs }}
+  {{- range $SchemaName, $TypeDefs := . }}
     type {{ .StructName }} struct {
     {{ with .TypeDefs }}
       {{- range . }}
