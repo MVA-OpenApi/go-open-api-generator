@@ -1,5 +1,12 @@
 package generator
 
+type GeneratorConfig struct {
+	OpenAPIPath string
+	OutputPath  string
+	ModuleName  string
+	UseLogger   bool
+}
+
 type ProjectConfig struct {
 	Name string
 	Path string
@@ -8,6 +15,7 @@ type ProjectConfig struct {
 type ServerConfig struct {
 	Port       int16
 	ModuleName string
+	UseLogger  bool
 }
 
 type ResponseConfig struct {

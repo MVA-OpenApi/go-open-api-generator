@@ -4,12 +4,18 @@ import (
 	"{{.ModuleName}}/pkg/handler"
 
 	"github.com/labstack/echo/v4"
+	{{- if .UseLogger}}
+		"github.com/labstack/echo/v4/middleware"
+	{{- end}}
 )
 
 func main() {
 	e := echo.New()
 
 	handler.NewHandler(e)
+	{{if .UseLogger}}
+		e.Use(middleware.Logger())
+	{{end}}
 
 	e.Logger.Fatal(e.Start(":{{.Port}}"))
 }
