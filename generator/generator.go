@@ -78,7 +78,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 
 	fileName := "main.go"
 	filePath := filepath.Join(config.Path, Cmd, fileName)
-	templateFile := "templates/server.go.tmpl"
+	templateFile := "../templates/server.go.tmpl"
 
 	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
 	createFileFromTemplate(filePath, templateFile, conf)
@@ -96,7 +96,7 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 
 	fileName := conf.OperationID + ".go"
 	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
-	templateFile := "templates/handlerFunc.go.tmpl"
+	templateFile := "../templates/handlerFunc.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
 
@@ -122,7 +122,7 @@ func generateHandlerFuncs(spec *openapi3.T) {
 
 	fileName := "handler.go"
 	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
-	templateFile := "templates/handler.go.tmpl"
+	templateFile := "../templates/handler.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
 }
