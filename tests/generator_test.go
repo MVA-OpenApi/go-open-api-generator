@@ -7,7 +7,8 @@ import (
 )
 
 func TestGenerationOfProject(t *testing.T) {
-	generator.GenerateServer("stores.yaml", "./build", "build")
+	config := generator.GeneratorConfig{OpenAPIPath: "stores.yaml", OutputPath: "./build", ModuleName: "build"}
+	generator.GenerateServer(config)
 	if _, err := os.Stat("./build"); err != nil {
 		if os.IsNotExist(err) {
 			t.Errorf("Project not generated")
@@ -16,7 +17,8 @@ func TestGenerationOfProject(t *testing.T) {
 }
 
 func TestGenerationOfProjectWithFalseName(t *testing.T) {
-	generator.GenerateServer("stres.yaml", "./build", "build")
+	config := generator.GeneratorConfig{OpenAPIPath: "stres.yaml", OutputPath: "./build", ModuleName: "build"}
+	generator.GenerateServer(config)
 	if _, err := os.Stat("./build"); err != nil {
 		if !os.IsNotExist(err) {
 			t.Errorf("Project generated but yaml file does not exist")
