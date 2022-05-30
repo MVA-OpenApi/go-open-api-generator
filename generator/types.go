@@ -30,7 +30,3 @@ type PathConfig struct {
 type HandlerConfig struct {
 	Paths []PathConfig
 }
-
-type TypeConfig struct {
-	schemaDefs map[string][]TypeDefinition
-}

@@ -43,7 +43,7 @@ func GenerateServer(openAPIPath string, projectPath string, moduleName string) {
 
 	generateHandlerFuncs(spec)
 
-	GenerateTypes(spec)
+	GenerateTypes(spec, config)
 
 	log.Info().Msg("Created all files successfully.")
 }
@@ -83,7 +83,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 	templateFile := "templates/server.go.tmpl"
 
 	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
-	createFileFromTemplate(filePath, templateFile, conf)
+	CreateFileFromTemplate(filePath, templateFile, conf)
 }
 
 func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
@@ -100,7 +100,7 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handlerFunc.go.tmpl"
 
-	createFileFromTemplate(filePath, templateFile, conf)
+	CreateFileFromTemplate(filePath, templateFile, conf)
 
 	return conf
 }
@@ -125,10 +125,10 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handler.go.tmpl"
 
-	createFileFromTemplate(filePath, templateFile, conf)
+	CreateFileFromTemplate(filePath, templateFile, conf)
 }
 
-func createFileFromTemplate(filePath string, tmplPath string, config interface{}) {
+func CreateFileFromTemplate(filePath string, tmplPath string, config interface{}) {
 	templateName := path.Base(tmplPath)
 
 	// Create file and open it
@@ -149,45 +149,4 @@ func createFileFromTemplate(filePath string, tmplPath string, config interface{}
 	}
 
 	log.Info().Msg("CREATE " + filePath)
-}
-
-type TypeDefinition struct {
-	TypeName string
-	Type string
-}
-
-func GenerateTypes(spec *openapi3.T) {
-	schemaDefs := generateStructDefs(&spec.Components.Schemas)
-	var conf TypeConfig
-	conf.schemaDefs = schemaDefs
-	tmpl := template.Must(template.New("structs").ParseFiles("templates/structs.go.tmpl"))
-	tmplErr := tmpl.Execute(os.Stdout, conf)
-	if tmplErr != nil {
-		log.Fatal().Err(tmplErr).Msg("Failed executing template.")
-		panic(tmplErr)
-	}
-}
-	
-func generateStructDefs(schemas *openapi3.Schemas) map[string][]TypeDefinition{
-	schemaDefs := make(map[string][]TypeDefinition, len(*schemas))
-	
-	for schemaName, ref := range *schemas {
-		schemaDefs[schemaName] = generateTypeDefs(&ref.Value.Properties)
-	}
-	return schemaDefs
-}
-
-
-
-func generateTypeDefs(properties *openapi3.Schemas) []TypeDefinition {
-	typeDefs := make([]TypeDefinition, len(*properties))
-	
-	for name, property := range *properties {
-		propertyDef := TypeDefinition{
-			name,
-			property.Value.Type,
-		}
-		typeDefs = append(typeDefs, propertyDef)	
-	}
-	return typeDefs
 }
