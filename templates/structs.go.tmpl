@@ -1,10 +1,9 @@
-{{ with .SchemaDefs }}
-  {{- range $SchemaName, $TypeDefs := . }}
-    type {{ .StructName }} struct {
-    {{ with .TypeDefs }}
-      {{- range . }}
-        {{ .TypeName }} {{ .Type }}
-      {{ end }}
-    {{ end }}
-  {{ end }}
+package {{ .ProjectName }}
+
+{{ range $SchemaName, $TypeDefs := .SchemaDefs -}}
+  type {{ $SchemaName }} struct {
+  {{- range $TypeDefs }}
+    {{ .TypeName }} {{ .Type }}
+  {{- end }}
+}
 {{ end }}
