@@ -40,6 +40,8 @@ func GenerateServer(conf GeneratorConfig) {
 
 	generateHandlerFuncs(spec)
 
+	generateFrontend(conf)
+
 	log.Info().Msg("Created all files successfully.")
 }
 

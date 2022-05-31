@@ -16,6 +16,10 @@ func main() {
 	{{if .UseLogger}}
 		e.Use(middleware.Logger())
 	{{end}}
+	
+	// serve frontend
+	e.File("/", "../public/index.html")
+	e.File("/{{.ModuleName}}.yaml", "../public/{{.ModuleName}}.yaml")
 
 	e.Logger.Fatal(e.Start(":{{.Port}}"))
 }
