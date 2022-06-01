@@ -14,9 +14,9 @@ type ProjectConfig struct {
 }
 
 type ServerConfig struct {
-	Port       int16
-	ModuleName string
-	UseLogger  bool
+	Port        int16
+	ModuleName  string
+	UseLogger   bool
 	OpenAPIName string
 }
 

@@ -51,7 +51,7 @@ var generateCmd = &cobra.Command{
 
 		log.Info().Msg("Running external commands...")
 		log.Info().Msg("RUN `go mod init " + projectName + "`")
-		extCmd.RunCommand("go mod init "+ projectName, projectDestination)
+		extCmd.RunCommand("go mod init "+projectName, projectDestination)
 		log.Info().Msg("RUN `go mod tidy`")
 		extCmd.RunCommand("go mod tidy", projectDestination)
 		log.Info().Msg("RUN `go fmt ./...`")
