@@ -12,6 +12,9 @@ func generateFrontend(conf GeneratorConfig) {
 	path := filepath.Join(conf.OutputPath, "public")
 	fs.GenerateFolder(path)
 
+	conf.OpenAPIName = fs.GetFileName(conf.OpenAPIPath)
+
+
 	// create static html files
 	createFileFromTemplate(filepath.Join(path, "index.html"), "templates/index.html.tmpl", conf)
 

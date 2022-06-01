@@ -36,7 +36,7 @@ func GenerateServer(conf GeneratorConfig) {
 
 	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger)
+	generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger, conf.OpenAPIPath)
 
 	generateHandlerFuncs(spec)
 
@@ -58,8 +58,9 @@ func createProjectPathDirectory() {
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool) {
-	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name, UseLogger: useLogger}
+func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool, openAPIPath string) {
+	openAPIName := fs.GetFileName(openAPIPath)
+	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name, UseLogger: useLogger, OpenAPIName: openAPIName}
 
 	if portSpec != nil {
 		portStr := portSpec.Default

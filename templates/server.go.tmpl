@@ -19,7 +19,7 @@ func main() {
 	
 	// serve frontend
 	e.File("/", "../public/index.html")
-	e.File("/{{.ModuleName}}.yaml", "../public/{{.ModuleName}}.yaml")
+	e.File("/{{.OpenAPIName}}.yaml", "../public/{{.OpenAPIName}}.yaml")
 
 	e.Logger.Fatal(e.Start(":{{.Port}}"))
 }

@@ -5,6 +5,7 @@ type GeneratorConfig struct {
 	OutputPath  string
 	ModuleName  string
 	UseLogger   bool
+	OpenAPIName string
 }
 
 type ProjectConfig struct {
@@ -16,6 +17,7 @@ type ServerConfig struct {
 	Port       int16
 	ModuleName string
 	UseLogger  bool
+	OpenAPIName string
 }
 
 type ResponseConfig struct {

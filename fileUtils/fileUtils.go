@@ -1,9 +1,11 @@
 package generator
 
 import (
+	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 )
@@ -58,4 +60,16 @@ func CopyFile(sourcePath string, destinationPath string, fileName string) {
     if err != nil {
         log.Error().Err(err).Msg("")
     }
+}
+
+func GetFileName(path string) string {
+	if !CheckIfFileExists(path) {
+		log.Error().Msg("No valid filepath given.")
+		return ""
+	}
+
+	fmt.Println(path)
+
+	name := strings.Split(filepath.Base(path), ".")[0]
+	return name
 }
