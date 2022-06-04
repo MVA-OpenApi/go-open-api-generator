@@ -40,7 +40,16 @@ func GenerateServer(conf GeneratorConfig) {
 
 	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger)
+	port := openapi3.ServerVariable{Default: "3000"}
+	if spec.Servers == nil {
+		generateServerTemplate(&port, conf.UseLogger)
+	} else {
+		if spec.Servers[0].Variables["port"] != nil {
+			generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger)
+		} else {
+			generateServerTemplate(&port, conf.UseLogger)
+		}
+	}
 
 	generateHandlerFuncs(spec)
 
