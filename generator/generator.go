@@ -16,6 +16,7 @@ const (
 	Cmd         = "cmd"
 	Pkg         = "pkg"
 	HandlerPkg  = "handler"
+	DatabasePkg = "db"
 	DefaultPort = 3000
 )
 
@@ -52,6 +53,7 @@ func createProjectPathDirectory() {
 	fs.GenerateFolder(filepath.Join(config.Path, Cmd))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
 
 	log.Info().Msg("Created project directory.")
 }
