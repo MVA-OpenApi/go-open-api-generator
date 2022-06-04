@@ -1,21 +1,41 @@
 package main
 
 import (
+	{{- if .UseDatabase}}
+		"{{.ModuleName}}/pkg/db"
+	{{- end}}
 	"{{.ModuleName}}/pkg/handler"
 
 	"github.com/labstack/echo/v4"
 	{{- if .UseLogger}}
 		"github.com/labstack/echo/v4/middleware"
 	{{- end}}
+
+	{{- if .UseDatabase}}
+		"github.com/rs/zerolog"
+		"github.com/rs/zerolog/log"
+		
+		"os"
+	{{- end}}
 )
 
 func main() {
 	e := echo.New()
 
+	{{- if .UseDatabase}}
+		// Set up zerolog time format
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		// Set pretty logging on
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+		db.InitDB()
+		defer db.CloseDB()
+	{{- end}}
+
 	handler.NewHandler(e)
 	{{if .UseLogger}}
 		e.Use(middleware.Logger())
 	{{end}}
-
+	
 	e.Logger.Fatal(e.Start(":{{.Port}}"))
 }

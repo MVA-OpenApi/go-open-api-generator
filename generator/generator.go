@@ -37,9 +37,11 @@ func GenerateServer(conf GeneratorConfig) {
 
 	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger)
+	generateServerTemplate(spec.Servers[0].Variables["port"], conf)
 
 	generateHandlerFuncs(spec)
+
+	generateDatabaseFiles(conf)
 
 	log.Info().Msg("Created all files successfully.")
 }
@@ -58,8 +60,12 @@ func createProjectPathDirectory() {
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool) {
-	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name, UseLogger: useLogger}
+func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) {
+	conf := ServerConfig{
+		Port:       DefaultPort,
+		ModuleName: config.Name,
+		Flags:      generatorConf.Flags,
+	}
 
 	if portSpec != nil {
 		portStr := portSpec.Default
@@ -77,7 +83,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool) {
 		log.Warn().Msg("No port field was found, using 3000 instead.")
 	}
 
-	if useLogger {
+	if generatorConf.UseLogger {
 		log.Info().Msg("Adding logging middleware.")
 	}
 
@@ -148,4 +154,17 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	templateFile := "templates/handler.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateDatabaseFiles(conf GeneratorConfig) {
+	if conf.UseDatabase {
+		log.Info().Msg("Adding SQLite database.")
+	}
+
+	fileName := conf.DatabaseName
+	filePath := filepath.Join(config.Path, Pkg, DatabasePkg, fileName)
+	templateFile := "templates/database.go.tmpl"
+
+	fs.GenerateFile(filePath + ".db")
+	createFileFromTemplate(filePath+".go", templateFile, conf)
 }
