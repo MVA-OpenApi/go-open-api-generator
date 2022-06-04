@@ -2,12 +2,8 @@ package generator
 
 import (
 	"errors"
-	"os"
-	"path"
 	"path/filepath"
 	"strconv"
-	"strings"
-	"text/template"
 
 	fs "go-open-api-generator/fileUtils"
 	"go-open-api-generator/parser"
@@ -102,23 +98,24 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool) {
 
 func generateHandlerFuncStub(op *openapi3.Operation, method string, path string) (OperationConfig, error) {
 	var conf OperationConfig
+	var methodPath = method + " " + path
 
 	conf.Method = method
 
 	conf.Summary = op.Summary
 	if op.Summary == "" {
-		log.Warn().Msg("No summary found for endpoint: " + method + " " + path)
+		log.Warn().Msg("No summary found for endpoint: " + methodPath)
 	}
 
 	conf.OperationID = op.OperationID
 	if op.OperationID == "" {
-		log.Error().Msg("No operation ID found for endpoint: " + method + " " + path)
+		log.Error().Msg("No operation ID found for endpoint: " + methodPath)
 		return conf, errors.New("no operation id, can't create function")
 	}
 
 	for resKey, resRef := range op.Responses {
-		if statusCode, err := strconv.Atoi(resKey); err != nil || !(statusCode >= 100 && statusCode < 600) {
-			log.Warn().Msg("Status code " + resKey + " for endpoint " + method + " " + path + " is not a valid status code.")
+		if !validateStatusCode(resKey) {
+			log.Warn().Msg("Status code " + resKey + " for endpoint " + methodPath + " is not a valid status code.")
 		}
 
 		conf.Responses = append(conf.Responses, ResponseConfig{resKey, *resRef.Value.Description})
@@ -138,7 +135,7 @@ func generateHandlerFuncs(spec *openapi3.T) {
 
 	for path, pathObj := range spec.Paths {
 		var newPath PathConfig
-		newPath.Path = strings.ReplaceAll(strings.ReplaceAll(path, "{", ":"), "}", "")
+		newPath.Path = convertPathParams(path)
 
 		for method, op := range pathObj.Operations() {
 			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path)
@@ -158,27 +155,4 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	templateFile := "../templates/handler.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
-}
-
-func createFileFromTemplate(filePath string, tmplPath string, config interface{}) {
-	templateName := path.Base(tmplPath)
-
-	// Create file and open it
-	fs.GenerateFile(filePath)
-	file, fErr := os.OpenFile(filePath, os.O_WRONLY, os.ModeAppend)
-	if fErr != nil {
-		log.Fatal().Err(fErr).Msg("Failed creating file.")
-		panic(fErr)
-	}
-	defer file.Close()
-
-	// Parse the template and write into file
-	tmpl := template.Must(template.New(templateName).ParseFiles(tmplPath))
-	tmplErr := tmpl.Execute(file, config)
-	if tmplErr != nil {
-		log.Fatal().Err(tmplErr).Msg("Failed executing template.")
-		panic(tmplErr)
-	}
-
-	log.Info().Msg("CREATE " + filePath)
 }
