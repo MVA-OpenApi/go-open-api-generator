@@ -81,7 +81,7 @@ func TestCreationOfFileFromTemplate(t *testing.T) {
 	if errorFile != nil {
 		t.Errorf("Error reading file")
 	}
-	if !strings.Contains(string(content), "\te.Logger.Fatal(e.Start(\":8000\"))\n") {
+	if !strings.Contains(string(content), "e.Logger.Fatal(e.Start(\":8000\"))") {
 		t.Errorf("False port number")
 	}
 }
