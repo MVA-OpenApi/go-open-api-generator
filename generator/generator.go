@@ -24,11 +24,11 @@ var (
 	config ProjectConfig
 )
 
-func GenerateServer(conf GeneratorConfig) {
+func GenerateServer(conf GeneratorConfig) error {
 	spec, err := parser.ParseOpenAPISpecFile(conf.OpenAPIPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load OpenAPI spec file")
-		return
+		return err
 	}
 
 	// Init project config
@@ -44,6 +44,8 @@ func GenerateServer(conf GeneratorConfig) {
 	generateDatabaseFiles(conf)
 
 	log.Info().Msg("Created all files successfully.")
+
+	return nil
 }
 
 func createProjectPathDirectory() {

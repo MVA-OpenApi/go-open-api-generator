@@ -57,7 +57,12 @@ var generateCmd = &cobra.Command{
 		}
 
 		log.Info().Msg("Generating project...")
-		gen.GenerateServer(config)
+		err := gen.GenerateServer(config)
+
+		if err != nil {
+			log.Error().Msg("Aborting...")
+			return
+		}
 
 		log.Info().Msg("Running external commands...")
 		log.Info().Msg("RUN `go mod init " + projectName + "`")
