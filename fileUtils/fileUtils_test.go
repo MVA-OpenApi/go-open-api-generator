@@ -15,12 +15,11 @@ func TestFileCreation(t *testing.T) {
 }
 
 func TestCheckIfFileExists(t *testing.T) {
-	correct := CheckIfFileExists("./fileUtils.go")
-	wrong := CheckIfFileExists("./fileUtils.txt")
-	if !correct {
+
+	if CheckIfFileExists("./fileUtils.go") {
 		t.Errorf("File exists but it could not be found")
 	}
-	if wrong {
+	if CheckIfFileExists("./fileUtils.txt") {
 		t.Errorf("File does not exist but CheckIfFileExists returned true")
 	}
 }
@@ -32,9 +31,11 @@ func TestGenerateFolder(t *testing.T) {
 			t.Errorf("Folder does not exist")
 		}
 	}
+	DeleteFolderRecursively("../test_folder")
 }
 
 func TestDeleteFolderRecursively(t *testing.T) {
+	GenerateFolder("../test_folder")
 	DeleteFolderRecursively("../test_folder")
 	if _, err := os.Stat("../test_folder"); err != nil {
 		if !os.IsNotExist(err) {
