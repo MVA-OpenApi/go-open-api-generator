@@ -4,74 +4,114 @@ import (
 	"fmt"
 	"github.com/cucumber/godog"
 	"net/http"
+	"regexp"
 	"strings"
 )
 
-func iRegisteredStoreWith(arg1 int) error {
-	return godog.ErrPending
-}
+func iSendGETRequestTo(endpoint string) error {
 
-func iSendRequestTo(method, path string) error {
-	data := strings.NewReader("id:456")
+	matcher, err := regexp.MatchString("/store/\\{id}", endpoint)
+	if err != nil {
+		panic(err)
+	}
+	url := "http://localhost:8000/" + endpoint
+	data := strings.NewReader("")
 
-	// initialize http client
 	client := &http.Client{}
-
-	// set the HTTP method, url, and request body
-	req, err := http.NewRequest(http.MethodPut, "http://localhost:8000/store", data)
+	req, err := http.NewRequest(http.MethodGet, url, data)
 	if err != nil {
 		panic(err)
 	}
 
-	// set the request header Content-Type for json
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
-
-	if resp.StatusCode != 405 {
-		return fmt.Errorf("expected 405 received %d", resp.StatusCode)
+	if endpoint == "/store" && resp.StatusCode != 404 {
+		return fmt.Errorf("expected 404 received %d", resp.StatusCode)
+	} else if matcher && resp.StatusCode != 501 {
+		return fmt.Errorf("expected 501 received %d", resp.StatusCode)
 	}
+
 	return nil
 }
 
-func iSendRequestToWithPayload(method, payload, path string) error {
+func iSendPOSTRequestToWithPayload(endpoint, payload string) error {
+	url := "http://localhost:8000/" + endpoint
 	data := strings.NewReader(payload)
-	url := "http://localhost:8000/" + path
 
-	// initialize http client
 	client := &http.Client{}
-
-	// set the HTTP method, url, and request body
-	req, err := http.NewRequest(http.MethodPut, url, data)
+	req, err := http.NewRequest(http.MethodPost, url, data)
 	if err != nil {
 		panic(err)
 	}
 
-	// set the request header Content-Type for json
 	req.Header.Set("Content-Type", "application/json; charset=utf-8")
 	resp, err := client.Do(req)
 	if err != nil {
 		panic(err)
 	}
 
-	if resp.StatusCode != 405 {
-		return fmt.Errorf("expected 405 received %d", resp.StatusCode)
+	if resp.StatusCode != 404 {
+		return fmt.Errorf("expected 404 received %d", resp.StatusCode)
 	}
 	return nil
 }
 
-func theResponseShouldBe(response int, expected int) (bool, error) {
-	if response != expected {
-		return false, fmt.Errorf("expected response was %d, but actually got %d", expected, response)
+func iSendPUTRequestToWithPayload(endpoint, payload string) error {
+	matcher, err := regexp.MatchString("/store/\\{id}", endpoint)
+
+	url := "http://localhost:8000/" + endpoint
+	data := strings.NewReader(payload)
+
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodGet, url, data)
+	if err != nil {
+		panic(err)
 	}
-	return true, nil
+
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	if endpoint == "/store" && resp.StatusCode != 404 {
+		return fmt.Errorf("expected 404 received %d", resp.StatusCode)
+	} else if matcher && resp.StatusCode != 501 {
+		return fmt.Errorf("expected 501 received %d", resp.StatusCode)
+	}
+	return nil
+}
+
+func theResponseForUrlWithRequestMethodShouldBe(method, url string, statusCode int) error {
+	matcher, err := regexp.MatchString("http://localhost:8000/store/\\{id}", url)
+	if err != nil {
+		panic(err)
+	}
+	if method == "GET" && url == "http://localhost:8000/store" {
+		if statusCode != 404 {
+			return fmt.Errorf("Expected 404 but received other status code")
+		}
+	} else if method == "GET" && matcher {
+		if statusCode != 501 {
+			return fmt.Errorf("Expected 404 but received other status code")
+		}
+	} else if method == "POST" {
+		if statusCode != 404 {
+			return fmt.Errorf("Expected 404 but received other status code")
+		}
+	} else if method == "PUT" {
+		if statusCode != 501 {
+			return fmt.Errorf("Expected 404 but received other status code")
+		}
+	}
+	return nil
 }
 
 func InitializeScenario(ctx *godog.ScenarioContext) {
-	ctx.Step(`^I registered store with (\d+)$`, iRegisteredStoreWith)
-	ctx.Step(`^I send "([^"]*)" request to "([^"]*)"$`, iSendRequestTo)
-	ctx.Step(`^I send "([^"]*)" request to "([^"]*)" with payload "([^"]*)"$`, iSendRequestToWithPayload)
-	ctx.Step(`^The response should be (\d+)$`, theResponseShouldBe)
+	ctx.Step(`^I send GET request to "([^"]*)"$`, iSendGETRequestTo)
+	ctx.Step(`^I send POST request to "([^"]*)" with payload "([^"]*)"$`, iSendPOSTRequestToWithPayload)
+	ctx.Step(`^I send PUT request to "([^"]*)" with payload "([^"]*)"$`, iSendPUTRequestToWithPayload)
+	ctx.Step(`^The response for url "([^"]*)" with request method "([^"]*)" should be (\d+)$`, theResponseForUrlWithRequestMethodShouldBe)
 }
