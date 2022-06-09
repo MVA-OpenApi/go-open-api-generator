@@ -2,24 +2,35 @@ package generator
 
 import (
 	"path/filepath"
+	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
 
+var IMPORT_UUID bool
+
 type TypeConfig struct {
 	SchemaDefs  map[string][]TypeDefinition
+	ImportDefs  []ImportDefinition
 	ProjectName string
 }
 
 type TypeDefinition struct {
-	TypeName string
-	Type     string
+	Name string
+	Type string
+}
+
+type ImportDefinition struct {
+	Name string
+	URL  string
 }
 
 func GenerateTypes(spec *openapi3.T, pConf ProjectConfig) {
 	schemaDefs := generateStructDefs(&spec.Components.Schemas)
+	importDefs := generateImports()
 	var conf TypeConfig
 	conf.SchemaDefs = schemaDefs
+	conf.ImportDefs = importDefs
 	conf.ProjectName = pConf.Name
 
 	fileName := "structs.go"
@@ -47,11 +58,17 @@ func generateTypeDefs(properties *openapi3.Schemas) []TypeDefinition {
 			t = "float32"
 		case "int32":
 			t = "int32"
-			/* case "uuid":
-				t = openapi_types.UUID
-			} */
+		case "uuid":
+			IMPORT_UUID = true
+			t = "uuid.UUID"
 		default:
 			t = property.Value.Type
+		}
+		println(property.Ref)
+		if property.Value.Type == "array" {
+			if property.Value.Items.Value.Type == "object" {
+				t = "[]" + property.Value.Items.Ref
+			}
 		}
 		propertyDef := TypeDefinition{
 			name,
@@ -60,4 +77,23 @@ func generateTypeDefs(properties *openapi3.Schemas) []TypeDefinition {
 		typeDefs = append(typeDefs, propertyDef)
 	}
 	return typeDefs
+}
+
+func toGoType(sRef *openapi3.SchemaRef) (goType string) {
+
+	// we know the object is defined in the schema
+	if sRef.Value.Type == "object" && sRef.Ref != "" {
+		goType = strings.Split(sRef.Ref, "/")[0]
+	} else if sRef.Value.Type == "array" {
+	}
+	return goType
+}
+
+func generateImports() []ImportDefinition {
+	var importDefs []ImportDefinition
+	if IMPORT_UUID {
+		importDefs = append(importDefs, ImportDefinition{"", "\"github.com/google/uuid\""})
+	}
+
+	return importDefs
 }

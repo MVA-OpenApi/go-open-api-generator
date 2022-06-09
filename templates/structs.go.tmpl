@@ -1,9 +1,19 @@
 package {{ .ProjectName }}
 
+{{ if .ImportDefs -}}
+  import (
+  {{ range .ImportDefs -}}
+    {{- if .Name }} {{ .Name }} {{ end -}}
+    {{- if .URL }} {{ .URL }} {{ end }}
+  {{ end -}}
+)
+{{ end }}
+
 {{ range $SchemaName, $TypeDefs := .SchemaDefs -}}
   type {{ $SchemaName }} struct {
-  {{- range $TypeDefs }}
-    {{ .TypeName }} {{ .Type }}
-  {{- end }}
+  {{ range $TypeDefs }}
+    {{- if .Name }} {{ .Name }} {{- end }}
+    {{- if .Type }} {{ .Type }} {{- end }}
+  {{ end }}
 }
 {{ end }}
