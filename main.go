@@ -1,10 +1,10 @@
 package main
 
 import (
-	"embed"
 	cli "go-open-api-generator/cli"
 	generator "go-open-api-generator/generator"
 
+	"embed"
 	"os"
 
 	"github.com/rs/zerolog"
@@ -19,7 +19,7 @@ func main() {
 	zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
 	// Set pretty logging on
 	log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
-	// Export embed FS to generator package
+	// Export embed template filesystem to generator package
 	generator.TmplFS = tmplFS
 
 	cli.Execute()
