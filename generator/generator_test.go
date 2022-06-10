@@ -23,7 +23,6 @@ func TestGenerationOfProjectJson(t *testing.T) {
 }
 
 func TestGenerationOfProjectYaml(t *testing.T) {
-	fs.DeleteFolderRecursively("../build")
 	config := GeneratorConfig{OpenAPIPath: "../examples/stores.yaml", OutputPath: "../build", ModuleName: "build"}
 	err := GenerateServer(config)
 	if err != nil {
@@ -37,21 +36,7 @@ func TestGenerationOfProjectYaml(t *testing.T) {
 	fs.DeleteFolderRecursively("../build")
 }
 
-func TestGenerationOfProjectWithFalseName(t *testing.T) {
-	fs.DeleteFolderRecursively("./build")
-	config := GeneratorConfig{OpenAPIPath: "stres.yaml", OutputPath: "./build", ModuleName: "build"}
-	err := GenerateServer(config)
-	if err != nil {
-		return
-	}
-	_, err1 := os.Stat("./build")
-	if !os.IsNotExist(err1) {
-		t.Errorf("Project generated but yaml file does not exist")
-	}
-}
-
 func TestHandlers(t *testing.T) {
-	fs.DeleteFolderRecursively("./build")
 	config := GeneratorConfig{OpenAPIPath: "../examples/stores.yaml", OutputPath: "./build", ModuleName: "build"}
 	err := GenerateServer(config)
 	if err != nil {
@@ -89,8 +74,6 @@ func TestDeletionOfProjects(t *testing.T) {
 }
 
 func TestCreationOfFileFromTemplate(t *testing.T) {
-	fs.DeleteFolderRecursively("../build")
-	fs.DeleteFolderRecursively("../mock")
 
 	config := GeneratorConfig{OpenAPIPath: "../examples/stores.yaml", OutputPath: "../build", ModuleName: "build"}
 	err := GenerateServer(config)
@@ -110,5 +93,16 @@ func TestCreationOfFileFromTemplate(t *testing.T) {
 		t.Errorf("False port number")
 	}
 	fs.DeleteFolderRecursively("../build")
+}
 
+func TestGenerationOfProjectWithFalseName(t *testing.T) {
+	config := GeneratorConfig{OpenAPIPath: "stres.yaml", OutputPath: "./build", ModuleName: "build"}
+	err := GenerateServer(config)
+	if err != nil {
+		return
+	}
+	_, err1 := os.Stat("./build")
+	if !os.IsNotExist(err1) {
+		t.Errorf("Project generated but yaml file does not exist")
+	}
 }

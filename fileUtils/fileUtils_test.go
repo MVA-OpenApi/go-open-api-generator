@@ -3,6 +3,7 @@ package generator
 import (
 	"os"
 	"testing"
+	fs "go-open-api-generator/fileUtils"
 )
 
 func TestFileCreation(t *testing.T) {
@@ -11,6 +12,10 @@ func TestFileCreation(t *testing.T) {
 		if os.IsNotExist(err) {
 			t.Errorf("File does not exist")
 		}
+	}
+	e := os.Remove("../test_file.txt")
+	if e != nil {
+		log.Fatal(e)
 	}
 }
 
