@@ -42,7 +42,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/Item'
-
 paths:
   /store:
     get:
