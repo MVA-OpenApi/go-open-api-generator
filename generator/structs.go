@@ -1,17 +1,21 @@
 package generator
 
 import (
+	"bytes"
 	"path/filepath"
 	"strings"
+	"text/template"
 
 	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/rs/zerolog/log"
 )
 
 var IMPORT_UUID bool
+var IMPORT_TIME bool
 
 type TypeConfig struct {
+	Imports     string
 	SchemaDefs  map[string][]TypeDefinition
-	ImportDefs  []ImportDefinition
 	ProjectName string
 }
 
@@ -25,12 +29,16 @@ type ImportDefinition struct {
 	URL  string
 }
 
+type ImportsConfig struct {
+	ImportDefs []ImportDefinition
+}
+
 func GenerateTypes(spec *openapi3.T, pConf ProjectConfig) {
 	schemaDefs := generateStructDefs(&spec.Components.Schemas)
-	importDefs := generateImports()
+	imports := generateImports()
 	var conf TypeConfig
+	conf.Imports = imports
 	conf.SchemaDefs = schemaDefs
-	conf.ImportDefs = importDefs
 	conf.ProjectName = pConf.Name
 
 	fileName := "structs.go"
@@ -52,48 +60,80 @@ func generateTypeDefs(properties *openapi3.Schemas) []TypeDefinition {
 	typeDefs := make([]TypeDefinition, len(*properties))
 
 	for name, property := range *properties {
-		var t string
-		switch property.Value.Format {
-		case "float":
-			t = "float32"
-		case "int32":
-			t = "int32"
-		case "uuid":
-			IMPORT_UUID = true
-			t = "uuid.UUID"
-		default:
-			t = property.Value.Type
-		}
-		println(property.Ref)
-		if property.Value.Type == "array" {
-			if property.Value.Items.Value.Type == "object" {
-				t = "[]" + property.Value.Items.Ref
-			}
-		}
 		propertyDef := TypeDefinition{
 			name,
-			t,
+			toGoType(property),
 		}
 		typeDefs = append(typeDefs, propertyDef)
 	}
 	return typeDefs
 }
 
+// schema type to generated go type
 func toGoType(sRef *openapi3.SchemaRef) (goType string) {
 
-	// we know the object is defined in the schema
-	if sRef.Value.Type == "object" && sRef.Ref != "" {
-		goType = strings.Split(sRef.Ref, "/")[0]
-	} else if sRef.Value.Type == "array" {
+	switch sRef.Value.Type {
+	case "number":
+		switch sRef.Value.Format {
+		case "float":
+			goType = "float32"
+		case "double":
+			goType = "float64"
+		default:
+			goType = "float"
+		}
+	case "integer":
+		goType = sRef.Value.Format
+	case "string":
+		switch sRef.Value.Format {
+		case "binary":
+			goType = "[]byte"
+		case "date":
+			IMPORT_TIME = true
+			goType = "time.Time"
+		case "uuid":
+			IMPORT_UUID = true
+			goType = "uuid.UUID"
+		default:
+			goType = "string"
+		}
+	case "array":
+		goType = "[]" + toGoType(sRef.Value.Items)
+	case "object":
+		if sRef.Ref != "" {
+			// checks if object type is defined by reference elsewhere in the schema
+			splitRef := strings.Split(sRef.Ref, "/")
+			goType = splitRef[len(splitRef)-1]
+
+		} else {
+			// TODO nested structs
+		}
+	default:
+		goType = sRef.Value.Type
 	}
 	return goType
 }
 
-func generateImports() []ImportDefinition {
+func generateImports() string {
 	var importDefs []ImportDefinition
 	if IMPORT_UUID {
 		importDefs = append(importDefs, ImportDefinition{"", "\"github.com/google/uuid\""})
 	}
+	if IMPORT_TIME {
+		importDefs = append(importDefs, ImportDefinition{"time", ""})
+	}
 
-	return importDefs
+	conf := ImportsConfig{
+		importDefs,
+	}
+
+	templateFile := "templates/imports.go.tmpl"
+	buf := &bytes.Buffer{}
+
+	tmpl := template.Must(template.ParseFiles(templateFile))
+	if tmplErr := tmpl.Execute(buf, conf); tmplErr != nil {
+		log.Fatal().Err(tmplErr).Msg("Failed executing imports template.")
+	}
+
+	return buf.String()
 }
