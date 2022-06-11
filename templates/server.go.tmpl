@@ -2,7 +2,9 @@ package main
 
 import (
 	"{{.ModuleName}}/pkg/handler"
+	"{{.ModuleName}}/pkg/util"
 
+	"github.com/rs/zerolog/log"
 	"github.com/labstack/echo/v4"
 	{{- if .UseLogger}}
 		"github.com/labstack/echo/v4/middleware"
@@ -10,6 +12,14 @@ import (
 )
 
 func main() {
+	// load config
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load config file.")
+		return
+	}	
+
+	// start echo server
 	e := echo.New()
 
 	handler.NewHandler(e)
@@ -21,5 +31,5 @@ func main() {
 	e.Static("/", "public/index.html")
 	e.Static("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
 
-	e.Logger.Fatal(e.Start(":{{.Port}}"))
+	e.Logger.Fatal(e.Start(":" + config.ServerPort))
 }

@@ -15,6 +15,7 @@ import (
 const (
 	Cmd         = "cmd"
 	Pkg         = "pkg"
+	UtilPkg     = "util"
 	HandlerPkg  = "handler"
 	DefaultPort = 3000
 )
@@ -36,7 +37,9 @@ func GenerateServer(conf GeneratorConfig) {
 
 	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger, conf.OpenAPIPath)
+	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf.UseLogger, conf.OpenAPIPath)
+
+	generateConfigFiles(serverConf)
 
 	generateHandlerFuncs(spec)
 
@@ -51,14 +54,14 @@ func createProjectPathDirectory() {
 
 	// Generates basic folder structure
 	fs.GenerateFolder(config.Path)
-	//fs.GenerateFolder(filepath.Join(config.Path, Cmd))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, UtilPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
 
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool, openAPIPath string) {
+func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool, openAPIPath string) (serverConf ServerConfig) {
 	openAPIName := fs.GetFileName(openAPIPath)
 	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name, UseLogger: useLogger, OpenAPIName: openAPIName}
 
@@ -88,6 +91,8 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool, o
 
 	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
 	createFileFromTemplate(filePath, templateFile, conf)
+
+	return conf
 }
 
 func generateHandlerFuncStub(op *openapi3.Operation, method string, path string) (OperationConfig, error) {
@@ -149,4 +154,21 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	templateFile := "templates/handler.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateConfigFiles(serverConf ServerConfig, ) {
+	// create app.env file
+	fileName := "app.env"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/app.env.tmpl"
+
+	createFileFromTemplate(filePath, templateFile, serverConf)
+
+	// create config.go.tmpl file
+	fileName = "config.go"
+	filePath = filepath.Join(config.Path, Pkg, UtilPkg, fileName)
+	templateFile = "templates/config.go.tmpl"
+
+	createFileFromTemplate(filePath, templateFile, nil)
+
 }
