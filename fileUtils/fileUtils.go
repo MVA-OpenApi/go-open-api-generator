@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"fmt"
 	"io/ioutil"
 	"os"
 	"path/filepath"
@@ -67,8 +66,6 @@ func GetFileName(path string) string {
 		log.Error().Msg("No valid filepath given.")
 		return ""
 	}
-
-	fmt.Println(path)
 
 	return strings.Split(filepath.Base(path), ".")[0]
 
