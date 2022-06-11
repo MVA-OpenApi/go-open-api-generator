@@ -51,7 +51,7 @@ func createProjectPathDirectory() {
 
 	// Generates basic folder structure
 	fs.GenerateFolder(config.Path)
-	fs.GenerateFolder(filepath.Join(config.Path, Cmd))
+	//fs.GenerateFolder(filepath.Join(config.Path, Cmd))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
 
@@ -83,7 +83,7 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, useLogger bool, o
 	}
 
 	fileName := "main.go"
-	filePath := filepath.Join(config.Path, Cmd, fileName)
+	filePath := filepath.Join(config.Path, fileName)
 	templateFile := "templates/server.go.tmpl"
 
 	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
