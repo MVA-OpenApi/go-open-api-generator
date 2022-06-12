@@ -68,5 +68,14 @@ func GetFileName(path string) string {
 	}
 
 	return strings.Split(filepath.Base(path), ".")[0]
+}
+
+func GetFileNameWithEnding(path string) string {
+	if !CheckIfFileExists(path) {
+		log.Error().Msg("No valid filepath given.")
+		return ""
+	}
+
+	return filepath.Base(path)
 
 }
