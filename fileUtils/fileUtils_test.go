@@ -1,9 +1,9 @@
 package generator
 
 import (
+	fs "go-open-api-generator/fileUtils"
 	"os"
 	"testing"
-	fs "go-open-api-generator/fileUtils"
 )
 
 func TestFileCreation(t *testing.T) {
