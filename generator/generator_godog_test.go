@@ -2,13 +2,14 @@ package generator
 
 import (
 	"fmt"
-	"github.com/cucumber/godog"
-	"github.com/rs/zerolog/log"
 	"net/http"
 	"os"
 	"os/exec"
 	"regexp"
 	"strings"
+
+	"github.com/cucumber/godog"
+	"github.com/rs/zerolog/log"
 )
 
 func init() {
@@ -84,6 +85,9 @@ func iSendPOSTRequestToWithPayload(endpoint, payload string) error {
 
 func iSendPUTRequestToWithPayload(endpoint, payload string) error {
 	matcher, err := regexp.MatchString("/store/\\{id}", endpoint)
+	if err != nil {
+		panic(err)
+	}
 
 	url := "http://localhost:8000/" + endpoint
 	data := strings.NewReader(payload)

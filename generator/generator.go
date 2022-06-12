@@ -165,7 +165,7 @@ func generateDatabaseFiles(conf GeneratorConfig) {
 
 	fileName := conf.DatabaseName
 	filePath := filepath.Join(config.Path, Pkg, DatabasePkg, fileName)
-	templateFile := "templates/database.go.tmpl"
+	templateFile := "../templates/database.go.tmpl"
 
 	fs.GenerateFile(filePath + ".db")
 	createFileFromTemplate(filePath+".go", templateFile, conf)

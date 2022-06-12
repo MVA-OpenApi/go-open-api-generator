@@ -1,7 +1,7 @@
 package generator
 
 import (
-	fs "go-open-api-generator/fileUtils"
+	"log"
 	"os"
 	"testing"
 )
@@ -21,10 +21,10 @@ func TestFileCreation(t *testing.T) {
 
 func TestCheckIfFileExists(t *testing.T) {
 
-	if CheckIfFileExists("./fileUtils.go") {
+	if CheckIfFileExists("./fileUtils/fileUtils.go") {
 		t.Errorf("File exists but it could not be found")
 	}
-	if CheckIfFileExists("./fileUtils.txt") {
+	if CheckIfFileExists("./fileUtils/fileUtils.txt") {
 		t.Errorf("File does not exist but CheckIfFileExists returned true")
 	}
 }
