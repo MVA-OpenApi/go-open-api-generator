@@ -3,10 +3,33 @@ package generator
 import (
 	"fmt"
 	"github.com/cucumber/godog"
+	"github.com/rs/zerolog/log"
 	"net/http"
+	"os"
+	"os/exec"
 	"regexp"
 	"strings"
 )
+
+func init() {
+	config := GeneratorConfig{OpenAPIPath: "../examples/stores.yaml", OutputPath: "../build", ModuleName: "build"}
+	err := GenerateServer(config)
+	if err != nil {
+		return
+	}
+	if _, err := os.Stat("../build"); err != nil {
+		if os.IsNotExist(err) {
+			log.Fatal()
+		}
+	}
+	//cmd := exec.Command("exit")
+	cmd := exec.Command("go", "run", "main.go")
+	cmd.Dir = "go-open-api-generator/build/cmd"
+	err = cmd.Run()
+	if err != nil {
+		log.Fatal()
+	}
+}
 
 func iSendGETRequestTo(endpoint string) error {
 
