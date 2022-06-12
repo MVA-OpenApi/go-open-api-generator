@@ -18,6 +18,7 @@ const (
 	UtilPkg     = "util"
 	HandlerPkg  = "handler"
 	DatabasePkg = "db"
+	ModelPkg    = "model"
 	DefaultPort = 3000
 )
 
@@ -46,6 +47,8 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	generateHandlerFuncs(spec)
 
+	GenerateTypes(spec, config)
+
 	generateDatabaseFiles(conf)
 
 	log.Info().Msg("Created all files successfully.")
@@ -63,6 +66,7 @@ func createProjectPathDirectory() {
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, UtilPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, ModelPkg))
 
 	log.Info().Msg("Created project directory.")
 }
@@ -142,7 +146,6 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string)
 
 func generateHandlerFuncs(spec *openapi3.T) {
 	var conf HandlerConfig
-
 	for path, pathObj := range spec.Paths {
 		var newPath PathConfig
 		newPath.Path = convertPathParams(path)
