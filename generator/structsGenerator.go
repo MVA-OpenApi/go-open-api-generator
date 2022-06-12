@@ -130,7 +130,7 @@ func generateImports() string {
 	templateFile := "templates/imports.go.tmpl"
 	buf := &bytes.Buffer{}
 
-	tmpl := template.Must(template.ParseFiles(templateFile))
+	tmpl := template.Must(template.ParseFS(TmplFS, templateFile))
 	if tmplErr := tmpl.Execute(buf, conf); tmplErr != nil {
 		log.Fatal().Err(tmplErr).Msg("Failed executing imports template.")
 	}

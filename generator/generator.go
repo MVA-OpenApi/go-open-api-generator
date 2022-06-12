@@ -1,6 +1,7 @@
 package generator
 
 import (
+	"embed"
 	"errors"
 	"path/filepath"
 	"strconv"
@@ -24,6 +25,7 @@ const (
 
 var (
 	config ProjectConfig
+	TmplFS embed.FS
 )
 
 func GenerateServer(conf GeneratorConfig) error {
