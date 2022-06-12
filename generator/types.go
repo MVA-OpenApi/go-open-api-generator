@@ -3,7 +3,6 @@ package generator
 type Flags struct {
 	UseDatabase bool
 	UseLogger   bool
-	OpenAPIName string
 }
 
 type GeneratorConfig struct {

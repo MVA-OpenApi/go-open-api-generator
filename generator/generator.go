@@ -67,13 +67,13 @@ func createProjectPathDirectory() {
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) (serverConf ServerConfig){
-	openAPIName := fs.GetFileName(openAPIPath)
-  conf := ServerConfig{
-		Port:       DefaultPort,
-		ModuleName: config.Name,
-		Flags:      generatorConf.Flags,
-    OpenAPIName: openAPIName,
+func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) (serverConf ServerConfig) {
+	openAPIName := fs.GetFileName(generatorConf.OpenAPIPath)
+	conf := ServerConfig{
+		Port:        DefaultPort,
+		ModuleName:  config.Name,
+		Flags:       generatorConf.Flags,
+		OpenAPIName: openAPIName,
 	}
 
 	if portSpec != nil {
@@ -167,7 +167,7 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	createFileFromTemplate(filePath, templateFile, conf)
 }
 
-func generateConfigFiles(serverConf ServerConfig, ) {
+func generateConfigFiles(serverConf ServerConfig) {
 	// create app.env file
 	fileName := "app.env"
 	filePath := filepath.Join(config.Path, fileName)

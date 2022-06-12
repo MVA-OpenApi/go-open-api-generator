@@ -9,16 +9,23 @@ import (
 
 func generateFrontend(conf GeneratorConfig) {
 	// create folder
+	type templateConfig struct {
+		GeneratorConfig
+		OpenAPIName string
+	}
 	path := filepath.Join(conf.OutputPath, "public")
 	fs.GenerateFolder(path)
 
-	conf.OpenAPIName = fs.GetFileName(conf.OpenAPIPath)
+	template := templateConfig{
+		GeneratorConfig: conf,
+		OpenAPIName:     fs.GetFileName(conf.OpenAPIPath),
+	}
 
 	// create static html files
-	createFileFromTemplate(filepath.Join(path, "index.html"), "templates/index.html.tmpl", conf)
+	createFileFromTemplate(filepath.Join(path, "index.html"), "templates/index.html.tmpl", template)
 
 	// copy OpenAPI Specification in this directory
-	fs.CopyFile(conf.OpenAPIPath, path, conf.OpenAPIName + ".yaml")
+	fs.CopyFile(conf.OpenAPIPath, path, template.OpenAPIName+".yaml")
 
 	log.Info().Msg("Created Frontend.")
 }
