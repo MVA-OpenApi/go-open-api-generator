@@ -15,6 +15,7 @@ import (
 const (
 	Cmd         = "cmd"
 	Pkg         = "pkg"
+	UtilPkg     = "util"
 	HandlerPkg  = "handler"
 	DatabasePkg = "db"
 	DefaultPort = 3000
@@ -37,7 +38,11 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"], conf)
+	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf)
+
+	generateConfigFiles(serverConf)
+
+	generateFrontend(conf)
 
 	generateHandlerFuncs(spec)
 
@@ -54,19 +59,21 @@ func createProjectPathDirectory() {
 
 	// Generates basic folder structure
 	fs.GenerateFolder(config.Path)
-	fs.GenerateFolder(filepath.Join(config.Path, Cmd))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, UtilPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
 
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) {
+func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) (serverConf ServerConfig) {
+	openAPIName := fs.GetFileName(generatorConf.OpenAPIPath)
 	conf := ServerConfig{
-		Port:       DefaultPort,
-		ModuleName: config.Name,
-		Flags:      generatorConf.Flags,
+		Port:        DefaultPort,
+		ModuleName:  config.Name,
+		Flags:       generatorConf.Flags,
+		OpenAPIName: openAPIName,
 	}
 
 	if portSpec != nil {
@@ -90,11 +97,13 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 	}
 
 	fileName := "main.go"
-	filePath := filepath.Join(config.Path, Cmd, fileName)
+	filePath := filepath.Join(config.Path, fileName)
 	templateFile := "templates/server.go.tmpl"
 
 	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
 	createFileFromTemplate(filePath, templateFile, conf)
+
+	return conf
 }
 
 func generateHandlerFuncStub(op *openapi3.Operation, method string, path string) (OperationConfig, error) {
@@ -156,6 +165,23 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	templateFile := "templates/handler.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateConfigFiles(serverConf ServerConfig) {
+	// create app.env file
+	fileName := "app.env"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/app.env.tmpl"
+
+	createFileFromTemplate(filePath, templateFile, serverConf)
+
+	// create config.go.tmpl file
+	fileName = "config.go"
+	filePath = filepath.Join(config.Path, Pkg, UtilPkg, fileName)
+	templateFile = "templates/config.go.tmpl"
+
+	createFileFromTemplate(filePath, templateFile, nil)
+
 }
 
 func generateDatabaseFiles(conf GeneratorConfig) {

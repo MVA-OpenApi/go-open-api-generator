@@ -5,7 +5,13 @@ import (
 		"{{.ModuleName}}/pkg/db"
 	{{- end}}
 	"{{.ModuleName}}/pkg/handler"
+	"{{.ModuleName}}/pkg/util"
+	
+	{{if .UseLogger}}
+		"os"
+	{{end}}
 
+	"github.com/rs/zerolog/log"
 	"github.com/labstack/echo/v4"
 	{{- if .UseLogger}}
 		"github.com/labstack/echo/v4/middleware"
@@ -20,6 +26,23 @@ import (
 )
 
 func main() {
+	// load config
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load config file.")
+		return
+	}	
+
+	{{if .UseLogger}}
+		// create and open config file
+		f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to create and open logging file.")
+			return
+		}
+	{{end}}
+
+	// start echo server
 	e := echo.New()
 
 	{{- if .UseDatabase}}
@@ -34,8 +57,15 @@ func main() {
 
 	handler.NewHandler(e)
 	{{if .UseLogger}}
-		e.Use(middleware.Logger())
+		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "method=${method}, uri=${uri}, status=${status}\n",
+		Output: f,
+		}))
 	{{end}}
 	
-	e.Logger.Fatal(e.Start(":{{.Port}}"))
+	// serve frontend
+	e.File("/", "public/index.html")
+	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
+
+	e.Logger.Fatal(e.Start(":" + config.ServerPort))
 }
