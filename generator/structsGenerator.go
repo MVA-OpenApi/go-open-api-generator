@@ -42,9 +42,9 @@ func GenerateTypes(spec *openapi3.T, pConf ProjectConfig) {
 	conf.ProjectName = pConf.Name
 
 	fileName := "structs.go"
-	filePath := filepath.Join(pConf.Path, fileName)
+	filePath := filepath.Join(pConf.Path, Pkg, ModelPkg, fileName)
 	templateFile := "templates/structs.go.tmpl"
-	CreateFileFromTemplate(filePath, templateFile, conf)
+	createFileFromTemplate(filePath, templateFile, conf)
 }
 
 func generateStructDefs(schemas *openapi3.Schemas) map[string][]TypeDefinition {

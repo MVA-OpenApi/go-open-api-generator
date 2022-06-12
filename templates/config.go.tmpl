@@ -1,0 +1,29 @@
+package util 
+
+import (
+	"github.com/spf13/viper"
+    "github.com/rs/zerolog/log"
+)
+
+type Config struct {
+	ServerPort string `mapstructure:"SERVER_PORT"`
+}
+
+func LoadConfig(path string) (config Config, err error) {
+	viper.AddConfigPath(path)
+	viper.SetConfigName("app")
+	viper.SetConfigType("env")
+
+	viper.AutomaticEnv()
+
+	err = viper.ReadInConfig() 
+	if err != nil {
+        log.Error().Err(err).Msg("Failed to read config file.")
+		return
+	}
+
+	err = viper.Unmarshal(&config)
+
+	return
+
+}

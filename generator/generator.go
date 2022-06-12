@@ -1,12 +1,9 @@
 package generator
 
 import (
-	"os"
-	"path"
+	"errors"
 	"path/filepath"
 	"strconv"
-	"strings"
-	"text/template"
 
 	fs "go-open-api-generator/fileUtils"
 	"go-open-api-generator/parser"
@@ -18,7 +15,10 @@ import (
 const (
 	Cmd         = "cmd"
 	Pkg         = "pkg"
+	UtilPkg     = "util"
 	HandlerPkg  = "handler"
+	DatabasePkg = "db"
+	ModelPkg    = "model"
 	DefaultPort = 3000
 )
 
@@ -26,26 +26,34 @@ var (
 	config ProjectConfig
 )
 
-func GenerateServer(openAPIPath string, projectPath string, moduleName string) {
-	spec, err := parser.ParseOpenAPISpecFile(openAPIPath)
+func GenerateServer(conf GeneratorConfig) error {
+	spec, err := parser.ParseOpenAPISpecFile(conf.OpenAPIPath)
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to load OpenAPI spec file")
-		return
+		return err
 	}
 
 	// Init project config
-	config.Name = moduleName
-	config.Path = projectPath
+	config.Name = conf.ModuleName
+	config.Path = conf.OutputPath
 
 	createProjectPathDirectory()
 
-	generateServerTemplate(spec.Servers[0].Variables["port"])
+	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf)
+
+	generateConfigFiles(serverConf)
+
+	generateFrontend(conf)
 
 	generateHandlerFuncs(spec)
 
 	GenerateTypes(spec, config)
 
+	generateDatabaseFiles(conf)
+
 	log.Info().Msg("Created all files successfully.")
+
+	return nil
 }
 
 func createProjectPathDirectory() {
@@ -54,15 +62,23 @@ func createProjectPathDirectory() {
 
 	// Generates basic folder structure
 	fs.GenerateFolder(config.Path)
-	fs.GenerateFolder(filepath.Join(config.Path, Cmd))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, UtilPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, ModelPkg))
 
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable) {
-	conf := ServerConfig{Port: DefaultPort, ModuleName: config.Name}
+func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) (serverConf ServerConfig) {
+	openAPIName := fs.GetFileName(generatorConf.OpenAPIPath)
+	conf := ServerConfig{
+		Port:        DefaultPort,
+		ModuleName:  config.Name,
+		Flags:       generatorConf.Flags,
+		OpenAPIName: openAPIName,
+	}
 
 	if portSpec != nil {
 		portStr := portSpec.Default
@@ -76,23 +92,46 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable) {
 		} else {
 			conf.Port = int16(port)
 		}
+	} else {
+		log.Warn().Msg("No port field was found, using 3000 instead.")
+	}
+
+	if generatorConf.UseLogger {
+		log.Info().Msg("Adding logging middleware.")
 	}
 
 	fileName := "main.go"
-	filePath := filepath.Join(config.Path, Cmd, fileName)
+	filePath := filepath.Join(config.Path, fileName)
 	templateFile := "templates/server.go.tmpl"
 
 	log.Info().Msg("Creating server at port " + strconv.Itoa(int(conf.Port)) + "...")
-	CreateFileFromTemplate(filePath, templateFile, conf)
+	createFileFromTemplate(filePath, templateFile, conf)
+
+	return conf
 }
 
-func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
+func generateHandlerFuncStub(op *openapi3.Operation, method string, path string) (OperationConfig, error) {
 	var conf OperationConfig
+	var methodPath = method + " " + path
+
+	conf.Method = method
 
 	conf.Summary = op.Summary
+	if op.Summary == "" {
+		log.Warn().Msg("No summary found for endpoint: " + methodPath)
+	}
+
 	conf.OperationID = op.OperationID
+	if op.OperationID == "" {
+		log.Error().Msg("No operation ID found for endpoint: " + methodPath)
+		return conf, errors.New("no operation id, can't create function")
+	}
 
 	for resKey, resRef := range op.Responses {
+		if !validateStatusCode(resKey) {
+			log.Warn().Msg("Status code " + resKey + " for endpoint " + methodPath + " is not a valid status code.")
+		}
+
 		conf.Responses = append(conf.Responses, ResponseConfig{resKey, *resRef.Value.Description})
 	}
 
@@ -100,20 +139,23 @@ func generateHandlerFuncStub(op *openapi3.Operation) OperationConfig {
 	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handlerFunc.go.tmpl"
 
-	CreateFileFromTemplate(filePath, templateFile, conf)
+	createFileFromTemplate(filePath, templateFile, conf)
 
-	return conf
+	return conf, nil
 }
 
 func generateHandlerFuncs(spec *openapi3.T) {
 	var conf HandlerConfig
 	for path, pathObj := range spec.Paths {
 		var newPath PathConfig
-		newPath.Path = strings.ReplaceAll(strings.ReplaceAll(path, "{", ":"), "}", "")
+		newPath.Path = convertPathParams(path)
 
 		for method, op := range pathObj.Operations() {
-			opConfig := generateHandlerFuncStub(op)
-			opConfig.Method = method
+			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path)
+
+			if err != nil {
+				log.Err(err).Msg("Skipping generation of handler function for endpoint " + method + " " + path)
+			}
 
 			newPath.Operations = append(newPath.Operations, opConfig)
 		}
@@ -125,28 +167,35 @@ func generateHandlerFuncs(spec *openapi3.T) {
 	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handler.go.tmpl"
 
-	CreateFileFromTemplate(filePath, templateFile, conf)
+	createFileFromTemplate(filePath, templateFile, conf)
 }
 
-func CreateFileFromTemplate(filePath string, tmplPath string, config interface{}) {
-	templateName := path.Base(tmplPath)
+func generateConfigFiles(serverConf ServerConfig) {
+	// create app.env file
+	fileName := "app.env"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/app.env.tmpl"
 
-	// Create file and open it
-	fs.GenerateFile(filePath)
-	file, fErr := os.OpenFile(filePath, os.O_WRONLY, os.ModeAppend)
-	if fErr != nil {
-		log.Fatal().Err(fErr).Msg("Failed creating file.")
-		panic(fErr)
+	createFileFromTemplate(filePath, templateFile, serverConf)
+
+	// create config.go.tmpl file
+	fileName = "config.go"
+	filePath = filepath.Join(config.Path, Pkg, UtilPkg, fileName)
+	templateFile = "templates/config.go.tmpl"
+
+	createFileFromTemplate(filePath, templateFile, nil)
+
+}
+
+func generateDatabaseFiles(conf GeneratorConfig) {
+	if conf.UseDatabase {
+		log.Info().Msg("Adding SQLite database.")
 	}
-	defer file.Close()
 
-	// Parse the template and write into file
-	tmpl := template.Must(template.New(templateName).ParseFiles(tmplPath))
-	tmplErr := tmpl.Execute(file, config)
-	if tmplErr != nil {
-		log.Fatal().Err(tmplErr).Msg("Failed executing template.")
-		panic(tmplErr)
-	}
+	fileName := conf.DatabaseName
+	filePath := filepath.Join(config.Path, Pkg, DatabasePkg, fileName)
+	templateFile := "templates/database.go.tmpl"
 
-	log.Info().Msg("CREATE " + filePath)
+	fs.GenerateFile(filePath + ".db")
+	createFileFromTemplate(filePath+".go", templateFile, conf)
 }

@@ -1,15 +1,71 @@
 package main
 
 import (
+	{{- if .UseDatabase}}
+		"{{.ModuleName}}/pkg/db"
+	{{- end}}
 	"{{.ModuleName}}/pkg/handler"
+	"{{.ModuleName}}/pkg/util"
+	
+	{{if .UseLogger}}
+		"os"
+	{{end}}
 
+	"github.com/rs/zerolog/log"
 	"github.com/labstack/echo/v4"
+	{{- if .UseLogger}}
+		"github.com/labstack/echo/v4/middleware"
+	{{- end}}
+
+	{{- if .UseDatabase}}
+		"github.com/rs/zerolog"
+		"github.com/rs/zerolog/log"
+		
+		"os"
+	{{- end}}
 )
 
 func main() {
+	// load config
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load config file.")
+		return
+	}	
+
+	{{if .UseLogger}}
+		// create and open config file
+		f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE, 0666)
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to create and open logging file.")
+			return
+		}
+	{{end}}
+
+	// start echo server
 	e := echo.New()
 
-	handler.NewHandler(e)
+	{{- if .UseDatabase}}
+		// Set up zerolog time format
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		// Set pretty logging on
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
 
-	e.Logger.Fatal(e.Start(":{{.Port}}"))
+		db.InitDB()
+		defer db.CloseDB()
+	{{- end}}
+
+	handler.NewHandler(e)
+	{{if .UseLogger}}
+		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
+		Format: "method=${method}, uri=${uri}, status=${status}\n",
+		Output: f,
+		}))
+	{{end}}
+	
+	// serve frontend
+	e.File("/", "public/index.html")
+	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
+
+	e.Logger.Fatal(e.Start(":" + config.ServerPort))
 }

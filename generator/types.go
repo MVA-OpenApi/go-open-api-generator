@@ -1,13 +1,28 @@
 package generator
 
+type Flags struct {
+	UseDatabase bool
+	UseLogger   bool
+}
+
+type GeneratorConfig struct {
+	OpenAPIPath  string
+	OutputPath   string
+	ModuleName   string
+	DatabaseName string
+	Flags
+}
+
 type ProjectConfig struct {
 	Name string
 	Path string
 }
 
 type ServerConfig struct {
-	Port       int16
-	ModuleName string
+	Port        int16
+	ModuleName  string
+	OpenAPIName string
+	Flags
 }
 
 type ResponseConfig struct {

@@ -1,0 +1,65 @@
+package db
+
+import (
+	"database/sql"
+
+	_ "github.com/mattn/go-sqlite3"
+	"github.com/rs/zerolog/log"
+)
+
+var db *sql.DB
+
+func InitDB() {
+	var err error
+	db, err = sql.Open("sqlite3", "./{{.DatabaseName}}.db")
+	check(err)
+}
+
+func CloseDB() {
+	log.Info().Msg("Closing db...")
+	db.Close()
+}
+
+// Creates a transaction and runs a query with given parameters
+// Returns the result and the transaction so the caller can commit it
+func RunTxQuery(query string, args ...any) (*sql.Tx, *sql.Rows) {
+	stmt, err := db.Prepare(query)
+	check(err)
+	tx, err := db.Begin()
+	check(err)
+	res, err := tx.Stmt(stmt).Query(args...)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Rolling back transaction...")
+		tx.Rollback()
+		return nil, nil
+	}
+
+	return tx, res
+
+}
+
+// Creates a transaction and executes a query with given parameters
+func RunTxExec(query string, args ...any) {
+	stmt, err := db.Prepare(query)
+	check(err)
+	tx, err := db.Begin()
+	check(err)
+	_, err = tx.Stmt(stmt).Exec(args...)
+
+	if err != nil {
+		log.Error().Err(err).Msg("Rolling back transaction...")
+		tx.Rollback()
+		return
+	}
+
+	tx.Commit()
+
+}
+
+func check(e error) {
+	if e != nil {
+		log.Error().Err(e)
+		panic(e)
+	}
+}
