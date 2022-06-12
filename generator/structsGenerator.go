@@ -104,10 +104,10 @@ func toGoType(sRef *openapi3.SchemaRef) (goType string) {
 			// checks if object type is defined by reference elsewhere in the schema
 			splitRef := strings.Split(sRef.Ref, "/")
 			goType = splitRef[len(splitRef)-1]
-
-		} else {
-			// TODO nested structs
 		}
+		// else {
+		// TODO nested structs
+		// }
 	default:
 		goType = sRef.Value.Type
 	}
