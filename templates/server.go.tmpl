@@ -50,7 +50,7 @@ func main() {
 	{{end}}
 	
 	// serve frontend
-	e.File("/", "public/index.html")
+	e.File("/doc", "public/index.html")
 	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
 
 	e.Logger.Fatal(e.Start(":" + config.ServerPort))
