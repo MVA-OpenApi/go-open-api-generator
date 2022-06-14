@@ -32,6 +32,7 @@ func init() {
 	}
 }
 
+//nolint:unused
 func iSendGETRequestTo(endpoint string) error {
 
 	matcher, err := regexp.MatchString("/store/\\{id}", endpoint)
@@ -61,6 +62,7 @@ func iSendGETRequestTo(endpoint string) error {
 	return nil
 }
 
+//nolint:unused
 func iSendPOSTRequestToWithPayload(endpoint, payload string) error {
 	url := "http://localhost:8000/" + endpoint
 	data := strings.NewReader(payload)
@@ -83,6 +85,7 @@ func iSendPOSTRequestToWithPayload(endpoint, payload string) error {
 	return nil
 }
 
+//nolint:unused
 func iSendPUTRequestToWithPayload(endpoint, payload string) error {
 	matcher, err := regexp.MatchString("/store/\\{id}", endpoint)
 	if err != nil {
@@ -111,6 +114,7 @@ func iSendPUTRequestToWithPayload(endpoint, payload string) error {
 	return nil
 }
 
+//nolint:unused
 func theResponseForUrlWithRequestMethodShouldBe(method, url string, statusCode int) error {
 	matcher, err := regexp.MatchString("http://localhost:8000/store/\\{id}", url)
 	if err != nil {
@@ -136,6 +140,7 @@ func theResponseForUrlWithRequestMethodShouldBe(method, url string, statusCode i
 	return nil
 }
 
+//nolint:unused
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I send GET request to "([^"]*)"$`, iSendGETRequestTo)
 	ctx.Step(`^I send POST request to "([^"]*)" with payload "([^"]*)"$`, iSendPOSTRequestToWithPayload)
