@@ -7,9 +7,9 @@ import (
 	"{{.ModuleName}}/pkg/handler"
 	"{{.ModuleName}}/pkg/util"
 	
-	{{if or .UseLogger .UseDatabase }}
+	{{- if .UseDatabase}}
 		"os"
-	{{end}}
+	{{- end}}
 
 	"github.com/rs/zerolog/log"
 	"github.com/labstack/echo/v4"
@@ -31,15 +31,6 @@ func main() {
 		return
 	}	
 
-	{{if .UseLogger}}
-		// create and open config file
-		f, err := os.OpenFile("logfile", os.O_RDWR|os.O_CREATE, 0666)
-		if err != nil {
-			log.Error().Err(err).Msg("Failed to create and open logging file.")
-			return
-		}
-	{{end}}
-
 	// start echo server
 	e := echo.New()
 
@@ -55,14 +46,11 @@ func main() {
 
 	handler.NewHandler(e)
 	{{if .UseLogger}}
-		e.Use(middleware.LoggerWithConfig(middleware.LoggerConfig{
-		Format: "method=${method}, uri=${uri}, status=${status}\n",
-		Output: f,
-		}))
+		e.Use(middleware.Logger())
 	{{end}}
 	
 	// serve frontend
-	e.File("/", "public/index.html")
+	e.File("/doc", "public/index.html")
 	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
 
 	e.Logger.Fatal(e.Start(":" + config.ServerPort))
