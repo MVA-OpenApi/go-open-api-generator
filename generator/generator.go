@@ -102,6 +102,10 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 		log.Info().Msg("Adding logging middleware.")
 	}
 
+	if generatorConf.UseHTTP2 {
+		log.Info().Msg("Using HTTP/2 as default protocol")
+	}
+
 	fileName := "main.go"
 	filePath := filepath.Join(config.Path, fileName)
 	templateFile := "templates/server.go.tmpl"

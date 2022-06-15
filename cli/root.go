@@ -16,6 +16,7 @@ var (
 	projectName  string
 	loggerFlag   bool
 	databaseFlag bool
+	http2Flag    bool
 )
 
 // rootCmd represents the base command when called without any subcommands
@@ -53,6 +54,7 @@ var generateCmd = &cobra.Command{
 			Flags: gen.Flags{
 				UseDatabase: databaseFlag,
 				UseLogger:   loggerFlag,
+				UseHTTP2:    http2Flag,
 			},
 		}
 
@@ -90,6 +92,7 @@ func init() {
 	generateCmd.Flags().StringVarP(&projectName, "name", "n", "", "module name of generated code (default is 'build')")
 	generateCmd.Flags().BoolVarP(&loggerFlag, "logger", "l", false, "use logging middleware in generated code (default is 'false')")
 	generateCmd.Flags().BoolVarP(&databaseFlag, "database", "d", false, "add sqlite3 database in generated code (default is 'false')")
+	generateCmd.Flags().BoolVarP(&http2Flag, "http2", "H", false, "use HTTP/2 in generated code (default is 'false')")
 
 	// add generate command
 	rootCmd.AddCommand(generateCmd)

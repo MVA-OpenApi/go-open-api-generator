@@ -53,5 +53,9 @@ func main() {
 	e.File("/doc", "public/index.html")
 	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
 
+	{{- if .UseHTTP2}}
+	e.Logger.Fatal(e.StartTLS(":" + config.ServerPort, "cert.pem", "key.pem"))
+	{{else}}
 	e.Logger.Fatal(e.Start(":" + config.ServerPort))
+	{{end}}
 }
