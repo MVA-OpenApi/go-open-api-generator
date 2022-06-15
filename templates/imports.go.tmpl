@@ -1,3 +1,5 @@
+{{ define "imports" }}
+
 {{ if .ImportDefs -}}
   import (
   {{ range .ImportDefs -}}
@@ -5,4 +7,6 @@
     {{- if .URL }} {{ .URL }} {{ end }}
   {{ end -}}
 )
+{{ end }}
+
 {{ end }}

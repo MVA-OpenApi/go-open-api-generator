@@ -1,0 +1,9 @@
+package model
+
+{{ template "imports" .Imports }}
+
+{{ range $SchemaName, $TypeDefs := .SchemaDefs -}}
+  type {{ $SchemaName }} struct {
+  {{ template "structs" $TypeDefs }}
+  }
+{{ end }}
