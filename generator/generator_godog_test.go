@@ -2,35 +2,11 @@ package generator
 
 import (
 	"fmt"
+	"github.com/cucumber/godog"
 	"net/http"
-	"os"
-	"os/exec"
 	"regexp"
 	"strings"
-
-	"github.com/cucumber/godog"
-	"github.com/rs/zerolog/log"
 )
-
-func init() {
-	config := GeneratorConfig{OpenAPIPath: "../examples/stores.yaml", OutputPath: "../build", ModuleName: "build"}
-	err := GenerateServer(config)
-	if err != nil {
-		return
-	}
-	if _, err := os.Stat("../build"); err != nil {
-		if os.IsNotExist(err) {
-			log.Fatal()
-		}
-	}
-	//cmd := exec.Command("exit")
-	cmd := exec.Command("go", "run", "main.go")
-	cmd.Dir = "go-open-api-generator/build/cmd"
-	err = cmd.Run()
-	if err != nil {
-		log.Fatal()
-	}
-}
 
 //nolint:unused
 func iSendGETRequestTo(endpoint string) error {
@@ -141,9 +117,39 @@ func theResponseForUrlWithRequestMethodShouldBe(method, url string, statusCode i
 }
 
 //nolint:unused
+func iSendDELETERequestTo(endpoint string) error {
+	matcher, err := regexp.MatchString("/store/\\{id}", endpoint)
+	if err != nil {
+		panic(err)
+	}
+	url := "http://localhost:8000/" + endpoint
+	data := strings.NewReader("")
+
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodDelete, url, data)
+	if err != nil {
+		panic(err)
+	}
+
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	if endpoint == "/store" && resp.StatusCode != 404 {
+		return fmt.Errorf("expected 404 received %d", resp.StatusCode)
+	} else if matcher && resp.StatusCode != 501 {
+		return fmt.Errorf("expected 501 received %d", resp.StatusCode)
+	}
+
+	return nil
+}
+
+//nolint:unused
 func InitializeScenario(ctx *godog.ScenarioContext) {
 	ctx.Step(`^I send GET request to "([^"]*)"$`, iSendGETRequestTo)
 	ctx.Step(`^I send POST request to "([^"]*)" with payload "([^"]*)"$`, iSendPOSTRequestToWithPayload)
 	ctx.Step(`^I send PUT request to "([^"]*)" with payload "([^"]*)"$`, iSendPUTRequestToWithPayload)
 	ctx.Step(`^The response for url "([^"]*)" with request method "([^"]*)" should be (\d+)$`, theResponseForUrlWithRequestMethodShouldBe)
+	ctx.Step(`^I send DELETE request to "([^"]*)"$`, iSendDELETERequestTo)
 }

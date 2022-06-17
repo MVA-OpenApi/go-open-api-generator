@@ -22,3 +22,7 @@ Feature: Server Tests
   Scenario: Test PUT request for url /store/{id} improper payload
     When I send PUT request to "/store/45" with payload ""
     Then The response for url "/store/45" with request method "PUT" should be 501
+
+  Scenario: Test DELETE request for url /store/{id}
+    When I send DELETE request to "/store/40"
+    Then The response for url "/store/40" with request method "DELETE" should be 501
