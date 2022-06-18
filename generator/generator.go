@@ -20,7 +20,7 @@ const (
 	HandlerPkg  = "handler"
 	DatabasePkg = "db"
 	ModelPkg    = "model"
-	DefaultPort = 3000
+	DefaultPort = 8080
 )
 
 var (
@@ -90,12 +90,12 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 
 		port, err := strconv.Atoi(portStr)
 		if err != nil {
-			log.Warn().Msg("Failed to convert port, using 3000 instead.")
+			log.Warn().Msg("Failed to convert port, using 8080 instead.")
 		} else {
 			conf.Port = int16(port)
 		}
 	} else {
-		log.Warn().Msg("No port field was found, using 3000 instead.")
+		log.Warn().Msg("No port field was found, using 8080 instead.")
 	}
 
 	if generatorConf.UseLogger {
