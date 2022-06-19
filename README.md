@@ -9,6 +9,8 @@ We aim to make the life of Golang REST API developers easier by creating a tool 
 - A frontend interface which allows the developer to interact with the generated endpoints without using an external tool like Postman.
 - An option to add middleware logging into a file for the generated REST API.
 - An option to integrate boilerplate code for a small SQLite3 database.
+- An option to integrate HTTP2 support.
+- Supports API keys authorization (globally or per operation).
 # Contributions
 
 This project was made by 6 students of the TU Berlin as part of the module "Moderne Verteilte Anwendungen Programmierpraktikum" when studying B.Sc Computer Science.
