@@ -1,20 +1,17 @@
 package generator
 
 import (
-	"bytes"
 	"path/filepath"
 	"strings"
-	"text/template"
 
 	"github.com/getkin/kin-openapi/openapi3"
-	"github.com/rs/zerolog/log"
 )
 
 var IMPORT_UUID bool
 var IMPORT_TIME bool
 
-type TypeConfig struct {
-	Imports     string
+type ModelCOnfig struct {
+	Imports     ImportsConfig
 	SchemaDefs  map[string][]TypeDefinition
 	ProjectName string
 }
@@ -22,6 +19,8 @@ type TypeConfig struct {
 type TypeDefinition struct {
 	Name string
 	Type string
+	// only if Type is struct
+	NestedTypes []TypeDefinition
 }
 
 type ImportDefinition struct {
@@ -36,15 +35,15 @@ type ImportsConfig struct {
 func GenerateTypes(spec *openapi3.T, pConf ProjectConfig) {
 	schemaDefs := generateStructDefs(&spec.Components.Schemas)
 	imports := generateImports()
-	var conf TypeConfig
+	var conf ModelCOnfig
 	conf.Imports = imports
 	conf.SchemaDefs = schemaDefs
 	conf.ProjectName = pConf.Name
 
-	fileName := "structs.go"
+	fileName := "model.go"
 	filePath := filepath.Join(pConf.Path, Pkg, ModelPkg, fileName)
-	templateFile := "templates/structs.go.tmpl"
-	createFileFromTemplate(filePath, templateFile, conf)
+	templateFiles := []string{"templates/model.go.tmpl", "templates/imports.go.tmpl", "templates/structs.go.tmpl"}
+	createFileFromTemplates(filePath, templateFiles, conf)
 }
 
 func generateStructDefs(schemas *openapi3.Schemas) map[string][]TypeDefinition {
@@ -60,9 +59,15 @@ func generateTypeDefs(properties *openapi3.Schemas) []TypeDefinition {
 	typeDefs := make([]TypeDefinition, len(*properties))
 
 	for name, property := range *properties {
+		goType, nested := toGoType(property)
+		var nestedGoTypes []TypeDefinition
+		if nested {
+			nestedGoTypes = generateTypeDefs(&property.Value.Properties)
+		}
 		propertyDef := TypeDefinition{
 			name,
-			toGoType(property),
+			goType,
+			nestedGoTypes,
 		}
 		typeDefs = append(typeDefs, propertyDef)
 	}
@@ -70,7 +75,7 @@ func generateTypeDefs(properties *openapi3.Schemas) []TypeDefinition {
 }
 
 // schema type to generated go type
-func toGoType(sRef *openapi3.SchemaRef) (goType string) {
+func toGoType(sRef *openapi3.SchemaRef) (goType string, nested bool) {
 
 	switch sRef.Value.Type {
 	case "number":
@@ -98,23 +103,24 @@ func toGoType(sRef *openapi3.SchemaRef) (goType string) {
 			goType = "string"
 		}
 	case "array":
-		goType = "[]" + toGoType(sRef.Value.Items)
+		items, _ := toGoType(sRef.Value.Items)
+		goType = "[]" + items
 	case "object":
 		if sRef.Ref != "" {
 			// checks if object type is defined by reference elsewhere in the schema
 			splitRef := strings.Split(sRef.Ref, "/")
 			goType = splitRef[len(splitRef)-1]
+		} else {
+			goType = "struct"
+			nested = true
 		}
-		// else {
-		// TODO nested structs
-		// }
 	default:
 		goType = sRef.Value.Type
 	}
-	return goType
+	return goType, nested
 }
 
-func generateImports() string {
+func generateImports() ImportsConfig {
 	var importDefs []ImportDefinition
 	if IMPORT_UUID {
 		importDefs = append(importDefs, ImportDefinition{"", "\"github.com/google/uuid\""})
@@ -127,13 +133,5 @@ func generateImports() string {
 		importDefs,
 	}
 
-	templateFile := "templates/imports.go.tmpl"
-	buf := &bytes.Buffer{}
-
-	tmpl := template.Must(template.ParseFS(TmplFS, templateFile))
-	if tmplErr := tmpl.Execute(buf, conf); tmplErr != nil {
-		log.Fatal().Err(tmplErr).Msg("Failed executing imports template.")
-	}
-
-	return buf.String()
+	return conf
 }
