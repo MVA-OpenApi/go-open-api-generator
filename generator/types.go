@@ -3,6 +3,7 @@ package generator
 type Flags struct {
 	UseDatabase bool
 	UseLogger   bool
+	UseHTTP2    bool
 }
 
 type GeneratorConfig struct {
