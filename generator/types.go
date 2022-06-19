@@ -19,8 +19,9 @@ type ProjectConfig struct {
 }
 
 type ServerConfig struct {
-	Port       int16
-	ModuleName string
+	Port        int16
+	ModuleName  string
+	OpenAPIName string
 	Flags
 }
 

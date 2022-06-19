@@ -5,7 +5,13 @@ import (
 		"{{.ModuleName}}/pkg/db"
 	{{- end}}
 	"{{.ModuleName}}/pkg/handler"
+	"{{.ModuleName}}/pkg/util"
+	
+	{{- if .UseDatabase}}
+		"os"
+	{{- end}}
 
+	"github.com/rs/zerolog/log"
 	"github.com/labstack/echo/v4"
 	{{- if .UseLogger}}
 		"github.com/labstack/echo/v4/middleware"
@@ -14,12 +20,18 @@ import (
 	{{- if .UseDatabase}}
 		"github.com/rs/zerolog"
 		"github.com/rs/zerolog/log"
-		
-		"os"
 	{{- end}}
 )
 
 func main() {
+	// load config
+	config, err := util.LoadConfig(".")
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to load config file.")
+		return
+	}	
+
+	// start echo server
 	e := echo.New()
 
 	{{- if .UseDatabase}}
@@ -37,5 +49,9 @@ func main() {
 		e.Use(middleware.Logger())
 	{{end}}
 	
-	e.Logger.Fatal(e.Start(":{{.Port}}"))
+	// serve frontend
+	e.File("/doc", "public/index.html")
+	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
+
+	e.Logger.Fatal(e.Start(":" + config.ServerPort))
 }

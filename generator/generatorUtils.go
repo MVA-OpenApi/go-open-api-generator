@@ -25,7 +25,7 @@ func createFileFromTemplate(filePath string, tmplPath string, config interface{}
 	defer file.Close()
 
 	// Parse the template and write into file
-	tmpl := template.Must(template.New(templateName).ParseFiles(tmplPath))
+	tmpl := template.Must(template.New(templateName).ParseFS(TmplFS, tmplPath))
 	tmplErr := tmpl.Execute(file, config)
 	if tmplErr != nil {
 		log.Fatal().Err(tmplErr).Msg("Failed executing template.")

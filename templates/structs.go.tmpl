@@ -1,0 +1,12 @@
+package model
+
+{{ .Imports }}
+
+{{ range $SchemaName, $TypeDefs := .SchemaDefs -}}
+  type {{ $SchemaName }} struct {
+  {{ range $TypeDefs }}
+    {{- if .Name }} {{ .Name }} {{- end }}
+    {{- if .Type }} {{ .Type }} {{- end }}
+  {{ end }}
+}
+{{ end }}
