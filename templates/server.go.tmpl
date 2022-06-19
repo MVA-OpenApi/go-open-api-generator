@@ -11,7 +11,6 @@ import (
 		"os"
 	{{- end}}
 
-	"github.com/rs/zerolog/log"
 	"github.com/labstack/echo/v4"
 	{{- if .UseLogger}}
 		"github.com/labstack/echo/v4/middleware"
@@ -25,11 +24,7 @@ import (
 
 func main() {
 	// load config
-	config, err := util.LoadConfig(".")
-	if err != nil {
-		log.Error().Err(err).Msg("Failed to load config file.")
-		return
-	}	
+	util.LoadConfig()
 
 	// start echo server
 	e := echo.New()
@@ -53,5 +48,5 @@ func main() {
 	e.File("/doc", "public/index.html")
 	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
 
-	e.Logger.Fatal(e.Start(":" + config.ServerPort))
+	e.Logger.Fatal(e.Start(":" + util.AppConfig.ServerPort))
 }

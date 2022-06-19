@@ -178,7 +178,7 @@ func generateHandlerFuncs(spec *openapi3.T) {
 
 func generateConfigFiles(serverConf ServerConfig) {
 	// create app.env file
-	fileName := "app.env"
+	fileName := ".env"
 	filePath := filepath.Join(config.Path, fileName)
 	templateFile := "templates/app.env.tmpl"
 
