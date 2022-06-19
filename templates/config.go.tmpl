@@ -2,6 +2,7 @@ package util
 
 import (
 	"os"
+	"strings"
 
 	"github.com/joho/godotenv"
     "github.com/rs/zerolog/log"
@@ -9,6 +10,7 @@ import (
 
 type Config struct {
 	ServerPort string
+	ApiKeys []string
 }
 
 var AppConfig Config
@@ -22,4 +24,5 @@ func LoadConfig() {
 	}
 
 	AppConfig.ServerPort = os.Getenv("SERVER_PORT")
+	AppConfig.ApiKeys = strings.Split(os.Getenv("API_KEYS"), ",")
 }

@@ -20,6 +20,7 @@ const (
 	HandlerPkg  = "handler"
 	DatabasePkg = "db"
 	ModelPkg    = "model"
+	AuthzPkg    = "authz"
 	DefaultPort = 8080
 )
 
@@ -39,6 +40,8 @@ func GenerateServer(conf GeneratorConfig) error {
 	config.Name = conf.ModuleName
 	config.Path = conf.OutputPath
 
+	updateAuthConfig(spec, &conf)
+
 	createProjectPathDirectory(conf)
 
 	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf)
@@ -47,12 +50,16 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	generateFrontend(conf)
 
-	generateHandlerFuncs(spec)
+	generateHandlerFuncs(spec, conf)
 
 	GenerateTypes(spec, config)
 
 	if conf.UseDatabase {
 		generateDatabaseFiles(conf)
+	}
+
+	if conf.UseAuth {
+		generateAuthzFile(conf)
 	}
 
 	log.Info().Msg("Created all files successfully.")
@@ -73,6 +80,9 @@ func createProjectPathDirectory(conf GeneratorConfig) {
 		fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
 	}
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, ModelPkg))
+	if conf.UseAuth {
+		fs.GenerateFolder(filepath.Join(config.Path, Pkg, AuthzPkg))
+	}
 
 	log.Info().Msg("Created project directory.")
 }
@@ -120,9 +130,20 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 	return conf
 }
 
-func generateHandlerFuncStub(op *openapi3.Operation, method string, path string) (OperationConfig, error) {
+func generateHandlerFuncStub(op *openapi3.Operation, method string, path string, apiSecurityName string) (OperationConfig, error) {
 	var conf OperationConfig
 	var methodPath = method + " " + path
+
+	if op.Security != nil {
+		for _, item := range *op.Security {
+			for key := range item {
+				if key == apiSecurityName {
+					conf.UseAuth = true
+					break
+				}
+			}
+		}
+	}
 
 	conf.Method = method
 
@@ -154,14 +175,31 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string)
 	return conf, nil
 }
 
-func generateHandlerFuncs(spec *openapi3.T) {
-	var conf HandlerConfig
+func generateHandlerFuncs(spec *openapi3.T, genConf GeneratorConfig) {
+	type handlerConf struct {
+		HandlerConfig
+		UseAuth    bool
+		ModuleName string
+	}
+	var conf handlerConf
+	conf.ModuleName = genConf.ModuleName
+	conf.UseAuth = genConf.UseAuth
+
+	for _, item := range spec.Security {
+		for key := range item {
+			if key == genConf.ApiKeySecurityName {
+				conf.UseGlobalAuth = true
+				break
+			}
+		}
+	}
+
 	for path, pathObj := range spec.Paths {
 		var newPath PathConfig
 		newPath.Path = convertPathParams(path)
 
 		for method, op := range pathObj.Operations() {
-			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path)
+			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path, genConf.ApiKeySecurityName)
 
 			if err != nil {
 				log.Err(err).Msg("Skipping generation of handler function for endpoint " + method + " " + path)
@@ -206,4 +244,15 @@ func generateDatabaseFiles(conf GeneratorConfig) {
 
 	fs.GenerateFile(filePath + ".db")
 	createFileFromTemplate(filePath+".go", templateFile, conf)
+}
+
+func generateAuthzFile(conf GeneratorConfig) {
+	log.Info().Msg("Adding auth middleware.")
+
+	fileName := "authz.go"
+	filePath := filepath.Join(config.Path, Pkg, AuthzPkg, fileName)
+	templateFile := "templates/authz.go.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, conf)
 }

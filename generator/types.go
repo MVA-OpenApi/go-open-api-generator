@@ -6,11 +6,17 @@ type Flags struct {
 	UseHTTP2    bool
 }
 
+type AuthConfig struct {
+	UseAuth            bool
+	ApiKeyHeaderName   string
+	ApiKeySecurityName string
+}
 type GeneratorConfig struct {
 	OpenAPIPath  string
 	OutputPath   string
 	ModuleName   string
 	DatabaseName string
+	AuthConfig
 	Flags
 }
 
@@ -35,6 +41,7 @@ type OperationConfig struct {
 	Method      string
 	Summary     string
 	OperationID string
+	UseAuth     bool
 	Responses   []ResponseConfig
 }
 
@@ -44,5 +51,6 @@ type PathConfig struct {
 }
 
 type HandlerConfig struct {
-	Paths []PathConfig
+	Paths         []PathConfig
+	UseGlobalAuth bool
 }
