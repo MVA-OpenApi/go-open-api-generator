@@ -20,7 +20,7 @@ const (
 	HandlerPkg  = "handler"
 	DatabasePkg = "db"
 	ModelPkg    = "model"
-	DefaultPort = 3000
+	DefaultPort = 8080
 )
 
 var (
@@ -39,7 +39,7 @@ func GenerateServer(conf GeneratorConfig) error {
 	config.Name = conf.ModuleName
 	config.Path = conf.OutputPath
 
-	createProjectPathDirectory()
+	createProjectPathDirectory(conf)
 
 	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf)
 
@@ -51,14 +51,16 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	GenerateTypes(spec, config)
 
-	generateDatabaseFiles(conf)
+	if conf.UseDatabase {
+		generateDatabaseFiles(conf)
+	}
 
 	log.Info().Msg("Created all files successfully.")
 
 	return nil
 }
 
-func createProjectPathDirectory() {
+func createProjectPathDirectory(conf GeneratorConfig) {
 	// Removes previously generated folder structure
 	fs.DeleteFolderRecursively(config.Path)
 
@@ -67,7 +69,9 @@ func createProjectPathDirectory() {
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, UtilPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
-	fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
+	if conf.UseDatabase {
+		fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
+	}
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, ModelPkg))
 
 	log.Info().Msg("Created project directory.")
@@ -90,12 +94,12 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 
 		port, err := strconv.Atoi(portStr)
 		if err != nil {
-			log.Warn().Msg("Failed to convert port, using 3000 instead.")
+			log.Warn().Msg("Failed to convert port, using 8080 instead.")
 		} else {
 			conf.Port = int16(port)
 		}
 	} else {
-		log.Warn().Msg("No port field was found, using 3000 instead.")
+		log.Warn().Msg("No port field was found, using 8080 instead.")
 	}
 
 	if generatorConf.UseLogger {
@@ -178,7 +182,7 @@ func generateHandlerFuncs(spec *openapi3.T) {
 
 func generateConfigFiles(serverConf ServerConfig) {
 	// create app.env file
-	fileName := "app.env"
+	fileName := ".env"
 	filePath := filepath.Join(config.Path, fileName)
 	templateFile := "templates/app.env.tmpl"
 
@@ -194,9 +198,7 @@ func generateConfigFiles(serverConf ServerConfig) {
 }
 
 func generateDatabaseFiles(conf GeneratorConfig) {
-	if conf.UseDatabase {
-		log.Info().Msg("Adding SQLite database.")
-	}
+	log.Info().Msg("Adding SQLite database.")
 
 	fileName := conf.DatabaseName
 	filePath := filepath.Join(config.Path, Pkg, DatabasePkg, fileName)

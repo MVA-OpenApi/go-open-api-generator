@@ -1,12 +1,12 @@
-package model
+{{ define "structs" }}
 
-{{ .Imports }}
+  {{ range . }}
+    {{ .Name }}
+    {{- if .NestedTypes }} {{ .Type }} {
+        {{ template "structs" .NestedTypes}}
+      }
+    {{- else }} {{ .Type }}
+    {{- end -}}
+{{ end }}
 
-{{ range $SchemaName, $TypeDefs := .SchemaDefs -}}
-  type {{ $SchemaName }} struct {
-  {{ range $TypeDefs }}
-    {{- if .Name }} {{ .Name }} {{- end }}
-    {{- if .Type }} {{ .Type }} {{- end }}
-  {{ end }}
-}
 {{ end }}
