@@ -1,13 +1,25 @@
 package handler
 
-import "github.com/labstack/echo/v4"
+import (
+    {{ if .UseAuth }} "{{.ModuleName}}/pkg/authz" {{- end}}
+
+    "github.com/labstack/echo/v4"
+)
 
 func NewHandler(e *echo.Echo){
+    g := e.Group("")
+
+    {{ if .UseGlobalAuth }} g.Use(authz.Authz) {{- end}}
+
     {{- range .Paths }}
         {{$path := .Path}}
         // Operations for: "{{ $path }}"
         {{- range .Operations }}
-            e.{{ .Method }}("{{ $path }}", {{ .OperationID }})
+            {{- if .UseAuth }}
+                g.{{ .Method }}("{{ $path }}", {{ .OperationID }}, authz.Authz)
+            {{- else }} 
+                g.{{ .Method }}("{{ $path }}", {{ .OperationID }})
+            {{- end}}
         {{- end }} 
 
     {{- end }} 

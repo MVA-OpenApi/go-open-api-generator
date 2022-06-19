@@ -1,0 +1,26 @@
+package authz
+
+import (
+	"build/pkg/util"
+	"net/http"
+
+	"github.com/labstack/echo/v4"
+)
+
+func Authz(next echo.HandlerFunc) echo.HandlerFunc {
+	return func(c echo.Context) error {
+		if isAuthorized(c) {
+			return next(c)
+		}
+		return echo.NewHTTPError(http.StatusUnauthorized, "Please provide a valid API key")
+	}
+}
+
+func isAuthorized(c echo.Context) bool {
+	for _, key := range util.AppConfig.ApiKeys {
+		if key == c.Request().Header.Get("{{ .ApiKeyHeaderName }}") {
+			return true
+		}
+	}
+	return false
+}

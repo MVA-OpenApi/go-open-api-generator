@@ -9,6 +9,7 @@ import (
 
 	fs "go-open-api-generator/fileUtils"
 
+	"github.com/getkin/kin-openapi/openapi3"
 	"github.com/rs/zerolog/log"
 )
 
@@ -64,4 +65,15 @@ func validateStatusCode(code string) bool {
 
 func convertPathParams(path string) string {
 	return strings.ReplaceAll(strings.ReplaceAll(path, "{", ":"), "}", "")
+}
+
+func updateAuthConfig(spec *openapi3.T, conf *GeneratorConfig) {
+	for key, value := range spec.Components.SecuritySchemes {
+		if value.Value.Type == "apiKey" {
+			conf.UseAuth = true
+			conf.ApiKeyHeaderName = value.Value.Name
+			conf.ApiKeySecurityName = key
+			return
+		}
+	}
 }
