@@ -1,8 +1,8 @@
 package tests
 
 import (
-	"generator"
 	fs "go-open-api-generator/fileUtils"
+	"go-open-api-generator/generator"
 	_ "go-open-api-generator/tests"
 	"os"
 	"strings"

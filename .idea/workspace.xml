@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="ALL" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="79212333-417f-4026-89dd-d4c02001386d" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/generator/bdd_generator.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/generator/generator_tests/generator_test.go" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/generator/generator_tests/stores.yaml" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/templates/bdd.go.tmpl" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/generator/generator.go" beforeDir="false" afterPath="$PROJECT_DIR$/generator/generator.go" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Go File" />
+      </list>
+    </option>
+  </component>
+  <component name="GOROOT" url="file://$PROJECT_DIR$/../../../../Program Files/Go" />
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="ProjectId" id="2AI1nN0CPEcPTddyZHmruuYCprN" />
+  <component name="ProjectLevelVcsManager" settingsEditedManually="true" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent"><![CDATA[{
+  "keyToString": {
+    "DefaultGoTemplateProperty": "Go File",
+    "RunOnceActivity.OpenProjectViewOnStart": "true",
+    "RunOnceActivity.ShowReadmeOnStart": "true",
+    "RunOnceActivity.go.format.on.save.advertiser.fired": "true",
+    "RunOnceActivity.go.formatter.settings.were.checked": "true",
+    "RunOnceActivity.go.migrated.go.modules.settings": "true",
+    "RunOnceActivity.go.modules.go.list.on.any.changes.was.set": "true",
+    "RunOnceActivity.go.watchers.conflict.with.on.save.actions.check.performed": "true",
+    "WebServerToolWindowFactoryState": "false",
+    "configurable..is.expanded": "false",
+    "configurable.GoLibrariesConfigurable.is.expanded": "true",
+    "go.import.settings.migrated": "true",
+    "go.sdk.automatically.set": "true",
+    "last_opened_file_path": "C:/Users/User/Desktop/go-open-api-generator/generator/generator_tests",
+    "settings.editor.selected.configurable": "go.sdk"
+  }
+}]]></component>
+  <component name="RecentsManager">
+    <key name="CopyFile.RECENT_KEYS">
+      <recent name="C:\Users\User\Desktop\go-open-api-generator\generator\generator_tests" />
+      <recent name="C:\Users\User\Desktop\go-open-api-generator\templates" />
+      <recent name="C:\Users\User\Desktop\go-open-api-generator\generator\tests" />
+    </key>
+    <key name="MoveFile.RECENT_KEYS">
+      <recent name="C:\Users\User\Desktop\go-open-api-generator\generator" />
+      <recent name="C:\Users\User\Desktop\go-open-api-generator\fileUtils\tests" />
+      <recent name="C:\Users\User\Desktop\go-open-api-generator\parser\tests" />
+      <recent name="C:\Users\User\Desktop\go-open-api-generator\generator\tests" />
+      <recent name="C:\Users\User\Desktop\go-open-api-generator\parser" />
+    </key>
+  </component>
+  <component name="RunManager" selected="Go Build.go build go-open-api-generator">
+    <configuration name="go build go-open-api-generator" type="GoApplicationRunConfiguration" factoryName="Go Application" temporary="true" nameIsGenerated="true">
+      <module name="go-open-api-generator" />
+      <working_directory value="$PROJECT_DIR$" />
+      <parameters value="generate ./examples/stores.yaml -o . -n build" />
+      <kind value="PACKAGE" />
+      <package value="go-open-api-generator" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$/main.go" />
+      <method v="2" />
+    </configuration>
+    <configuration name="TestBDD in go-open-api-generator/generator/generator_tests" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="go-open-api-generator" />
+      <working_directory value="$PROJECT_DIR$/generator/generator_tests" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="go-open-api-generator/generator/generator_tests" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <pattern value="^\QTestBDD\E$" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test generator" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="go-open-api-generator" />
+      <working_directory value="$PROJECT_DIR$/generator" />
+      <kind value="PACKAGE" />
+      <package value="generator" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test generator/tests" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="go-open-api-generator" />
+      <working_directory value="$PROJECT_DIR$/generator/tests" />
+      <root_directory value="$PROJECT_DIR$/generator" />
+      <kind value="PACKAGE" />
+      <package value="generator/tests" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration name="go test go-open-api-generator/generator" type="GoTestRunConfiguration" factoryName="Go Test" temporary="true" nameIsGenerated="true">
+      <module name="go-open-api-generator" />
+      <working_directory value="$PROJECT_DIR$/generator" />
+      <root_directory value="$PROJECT_DIR$" />
+      <kind value="PACKAGE" />
+      <package value="go-open-api-generator/generator" />
+      <directory value="$PROJECT_DIR$" />
+      <filePath value="$PROJECT_DIR$" />
+      <framework value="gotest" />
+      <method v="2" />
+    </configuration>
+    <configuration default="true" type="SwaggerCodegen">
+      <option name="activeConfigurationType" value="FILE" />
+      <option name="configurationPath" value="" />
+      <option name="customJreEnabled" value="false" />
+      <option name="customTemplatesPath" value="" />
+      <option name="enableDebugLogging" value="false" />
+      <option name="generateToPath" value="C:\Users\User\Desktop\go-open-api-generator\gen" />
+      <option name="generationParameters">
+        <list />
+      </option>
+      <option name="generatorPath" value="https://repo1.maven.org/maven2/org/openapitools/openapi-generator-cli/5.0.0/openapi-generator-cli-5.0.0.jar" />
+      <option name="jdkPath" value="" />
+      <option name="language" value="java" />
+      <option name="specificationPath" value="C:\Users\User\Desktop\go-open-api-generator\examples\stores.yaml" />
+      <method v="2" />
+    </configuration>
+    <list>
+      <item itemvalue="Go Build.go build go-open-api-generator" />
+      <item itemvalue="Go Test.TestBDD in go-open-api-generator/generator/generator_tests" />
+      <item itemvalue="Go Test.go test generator/tests" />
+      <item itemvalue="Go Test.go test generator" />
+      <item itemvalue="Go Test.go test go-open-api-generator/generator" />
+    </list>
+    <recent_temporary>
+      <list>
+        <item itemvalue="Go Build.go build go-open-api-generator" />
+        <item itemvalue="Go Test.TestBDD in go-open-api-generator/generator/generator_tests" />
+        <item itemvalue="Go Test.go test generator/tests" />
+        <item itemvalue="Go Test.go test generator" />
+        <item itemvalue="Go Test.go test go-open-api-generator/generator" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TypeScriptGeneratedFilesManager">
+    <option name="version" value="3" />
+  </component>
+  <component name="Vcs.Log.Tabs.Properties">
+    <option name="TAB_STATES">
+      <map>
+        <entry key="MAIN">
+          <value>
+            <State />
+          </value>
+        </entry>
+      </map>
+    </option>
+  </component>
+  <component name="VgoProject">
+    <settings-migrated>true</settings-migrated>
+  </component>
+</project>

@@ -3,6 +3,7 @@ package generator
 import (
 	"embed"
 	"errors"
+	//"go-open-api-generator/generator"
 	"path/filepath"
 	"strconv"
 
@@ -47,6 +48,8 @@ func GenerateServer(conf GeneratorConfig) error {
 	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf)
 
 	generateConfigFiles(serverConf)
+
+	generateBdd(spec, conf)
 
 	generateFrontend(conf)
 
@@ -214,6 +217,56 @@ func generateHandlerFuncs(spec *openapi3.T, genConf GeneratorConfig) {
 	fileName := "handler.go"
 	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
 	templateFile := "templates/handler.go.tmpl"
+
+	createFileFromTemplate(filePath, templateFile, conf)
+}
+func generateBdd(spec *openapi3.T, genConf GeneratorConfig) {
+	var opConf OperationConfig
+	type handlerConf struct {
+		HandlerConfig
+		UseAuth    bool
+		ModuleName string
+	}
+	var conf handlerConf
+	conf.ModuleName = genConf.ModuleName
+	conf.UseAuth = genConf.UseAuth
+
+	for _, item := range spec.Security {
+		for key := range item {
+			if key == genConf.ApiKeySecurityName {
+				conf.UseGlobalAuth = true
+				break
+			}
+		}
+	}
+
+	for path, pathObj := range spec.Paths {
+		var newPath PathConfig
+		newPath.Path = convertPathParams(path)
+
+		for method, op := range pathObj.Operations() {
+			for resKey, resRef := range op.Responses {
+				if !validateStatusCode(resKey) {
+					log.Warn().Msg("Status code " + resKey + " for endpoint is not a valid status code.")
+				}
+
+				opConf.Responses = append(opConf.Responses, ResponseConfig{resKey, *resRef.Value.Description})
+			}
+			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path, genConf.ApiKeySecurityName)
+
+			if err != nil {
+				log.Err(err).Msg("Skipping generation of handler function for endpoint " + method + " " + path)
+			}
+
+			newPath.Operations = append(newPath.Operations, opConfig)
+		}
+
+		conf.Paths = append(conf.Paths, newPath)
+	}
+
+	fileName := "handler.go"
+	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
+	templateFile := "templates/bdd.go.tmpl"
 
 	createFileFromTemplate(filePath, templateFile, conf)
 }
