@@ -48,7 +48,7 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	generateConfigFiles(serverConf)
 
-	generateFrontend(conf)
+	generateFrontend(spec, conf)
 
 	generateHandlerFuncs(spec, conf)
 

@@ -54,3 +54,23 @@ type HandlerConfig struct {
 	Paths         []PathConfig
 	UseGlobalAuth bool
 }
+
+// struct for all schemas that have to be in the frontend
+type Schemas struct {
+	List []SchemaConf
+}
+
+// struct for the specific schema in Schemas
+type SchemaConf struct {
+	Name       string
+	Properties map[string]string
+	Methods    []MethodConf
+}
+
+// struct for each method a schema has
+type MethodConf struct {
+	Type        string
+	Endpoint    string
+	QueryParams map[string]string
+	PathParams  map[string]string
+}
