@@ -13,13 +13,18 @@ import (
 
 	"github.com/labstack/echo/v4"
 	{{- if .UseLogger}}
-		"github.com/labstack/echo/v4/middleware"
+		"github.com/labstack/echo/v4/echomiddleware"
 	{{- end}}
 
 	{{- if .UseDatabase}}
 		"github.com/rs/zerolog"
 		"github.com/rs/zerolog/log"
 	{{- end}}
+
+	{{- if .UseValidation }}
+		"github.com/getkin/kin-openapi"
+
+	{{- end }}
 )
 
 func main() {
@@ -40,9 +45,18 @@ func main() {
 	{{- end}}
 
 	handler.NewHandler(e)
-	{{if .UseLogger}}
-		e.Use(middleware.Logger())
-	{{end}}
+	{{- if .UseLogger }}
+		e.Use(echomiddleware.Logger())
+	{{ end }}
+
+	{{- if .UseValidation }}
+		spec, err := middleware.ParseOpenAPISpecFile("public/openapi.yaml", e.AcquireContext())
+		if err != nil {
+				e.Logger.Fatal(err)
+			}
+			g.Use(middleware.Validation(spec, e))
+	{{- end }}
+	
 	
 	// serve frontend
 	e.File("/doc", "public/index.html")
