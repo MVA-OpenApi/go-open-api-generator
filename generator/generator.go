@@ -105,17 +105,17 @@ func generateServerTemplate(spec *openapi3.T, generatorConf GeneratorConfig) (se
 			if portSpec.Enum != nil {
 				portStr = portSpec.Enum[0]
 			}
-	
+
 			port, err := strconv.Atoi(portStr)
 			if err != nil {
-				log.Warn().Msg("Failed to convert port, using" + strDefaultPort +  "instead.")
+				log.Warn().Msg("Failed to convert port, using" + strDefaultPort + "instead.")
 			} else {
 				conf.Port = int16(port)
 			}
 		} else {
 			log.Warn().Msg("No port field was found, using" + strDefaultPort + "instead.")
 		}
-	}else {
+	} else {
 		log.Warn().Msg("No servers field was found, using" + strDefaultPort + "instead.")
 	}
 
