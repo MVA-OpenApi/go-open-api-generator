@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"embed"
 	"errors"
-	"fmt"
 	"os"
 	"regexp"
 	"strings"
@@ -250,12 +249,7 @@ func generateBdd(path string) {
 	if err != nil {
 		log.Fatal()
 	}
-	defer func(file *os.File) {
-		err := file.Close()
-		if err != nil {
-
-		}
-	}(file)
+	defer file.Close()
 
 	scanner := bufio.NewScanner(file)
 
@@ -265,49 +259,31 @@ func generateBdd(path string) {
 		words := strings.Fields(line)
 		stringRegex := "\"([^\"]*)\""
 		for i, word := range words {
-			j := 0
 			if (word == "Scenario:" && i == 0) || (word == "Feature:" && i == 0) {
 				break
-			} else if word == "When" || word == "And" {
-				for _, word := range words {
-					value, _ := matchString(stringRegex, word)
-					ignore := ignore(word)
-					if !value && !ignore {
-						stepConf.Name = stepConf.Name + word
-					} else {
-						j = j + 1
-						//j serves as a counter for how many arguments we get
-						argument := "arg" + strconv.Itoa(j)
-						stepConf.Arguments = append(stepConf.Arguments, argument)
-					}
-				}
 			} else {
 				if word == PUT || word == GET || word == POST || word == DELETE {
 					stepConf.Method = word
 				} else if i >= 1 && (words[i-1] == "url" || words[i-1] == "URL" || words[i-1] == "endpoint" || words[i-1] == "Endpoint") {
-					value, err := matchString(stringRegex, word)
-					if err != nil {
-						return
+					//start := i
+					for _, word := range words[i:] {
+						if value, _ := regexp.MatchString(stringRegex, word); value {
+							stepConf.Endpoint = stepConf.Endpoint + word
+							break
+						}
 					}
-					if value {
-						stepConf.Endpoint = word
-					}
-				} else if n, err := strconv.Atoi(word); err == nil && 200 <= n && n <= 500 {
+				} else if n, err := strconv.Atoi(word); err == nil && 200 <= n && n <= 600 {
 					stepConf.StatusCode = word
 				} else if i >= 1 && (words[i-1] == "payload" || words[i-1] == "Payload" || words[i-1] == "PAYLOAD") {
-					value, err := matchString(stringRegex, word)
-					if err != nil {
-						return
-					}
-					if value {
-						stepConf.Payload = word
+					for _, word := range words[i:] {
+						stepConf.Payload = stepConf.Payload + word
 					}
 				} else {
 					ignore := ignore(word)
-					if stepConf.Name == "" && !ignore {
+					if len(stepConf.Name) == 0 && !ignore {
 						stepConf.Name = stepConf.Name + strings.ToLower(word)
-					} else {
-						value, _ := matchString(stringRegex, word)
+					} else if len(stepConf.Name) != 0 && !ignore {
+						value, _ := regexp.MatchString(stringRegex, word)
 						if !value {
 							r := []rune(word)
 							stepConf.Name = stepConf.Name + string(append([]rune{unicode.ToUpper(r[0])}, r[1:]...))
@@ -315,13 +291,7 @@ func generateBdd(path string) {
 					}
 				}
 			}
-			j = 0
 		}
-		fmt.Println("Name: ", stepConf.Name)
-		fmt.Println("Endpoint: ", stepConf.Endpoint)
-		fmt.Println("Payload: ", stepConf.Payload)
-		fmt.Println("Status Code: ", stepConf.StatusCode)
-		fmt.Println("Method: ", stepConf.Method)
 	}
 }
 
