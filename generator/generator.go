@@ -1,8 +1,15 @@
 package generator
 
 import (
+	"bufio"
 	"embed"
 	"errors"
+	"fmt"
+	"os"
+	"regexp"
+	"strings"
+	"unicode"
+
 	//"go-open-api-generator/generator"
 	"path/filepath"
 	"strconv"
@@ -15,14 +22,18 @@ import (
 )
 
 const (
-	Cmd         = "cmd"
-	Pkg         = "pkg"
-	UtilPkg     = "util"
-	HandlerPkg  = "handler"
-	DatabasePkg = "db"
-	ModelPkg    = "model"
-	AuthzPkg    = "authz"
-	DefaultPort = 8080
+	Cmd                = "cmd"
+	Pkg                = "pkg"
+	UtilPkg            = "util"
+	HandlerPkg         = "handler"
+	DatabasePkg        = "db"
+	ModelPkg           = "model"
+	AuthzPkg           = "authz"
+	DefaultPort        = 8080
+	PUT         string = "\"PUT\""
+	GET                = "\"GET\""
+	POST               = "\"POST\""
+	DELETE             = "\"DELETE\""
 )
 
 var (
@@ -49,7 +60,7 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	generateConfigFiles(serverConf)
 
-	generateBdd(spec, conf)
+	generateBdd("../tests/stores.feature")
 
 	generateFrontend(conf)
 
@@ -220,56 +231,101 @@ func generateHandlerFuncs(spec *openapi3.T, genConf GeneratorConfig) {
 
 	createFileFromTemplate(filePath, templateFile, conf)
 }
-func generateBdd(spec *openapi3.T, genConf GeneratorConfig) {
-	var opConf OperationConfig
-	type handlerConf struct {
-		HandlerConfig
-		UseAuth    bool
-		ModuleName string
-	}
-	var conf handlerConf
-	conf.ModuleName = genConf.ModuleName
-	conf.UseAuth = genConf.UseAuth
 
-	for _, item := range spec.Security {
-		for key := range item {
-			if key == genConf.ApiKeySecurityName {
-				conf.UseGlobalAuth = true
-				break
-			}
-		}
-	}
+//---------GENERATION OF BDD---------
 
-	for path, pathObj := range spec.Paths {
-		var newPath PathConfig
-		newPath.Path = convertPathParams(path)
-
-		for method, op := range pathObj.Operations() {
-			for resKey, resRef := range op.Responses {
-				if !validateStatusCode(resKey) {
-					log.Warn().Msg("Status code " + resKey + " for endpoint is not a valid status code.")
-				}
-
-				opConf.Responses = append(opConf.Responses, ResponseConfig{resKey, *resRef.Value.Description})
-			}
-			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path, genConf.ApiKeySecurityName)
-
-			if err != nil {
-				log.Err(err).Msg("Skipping generation of handler function for endpoint " + method + " " + path)
-			}
-
-			newPath.Operations = append(newPath.Operations, opConfig)
-		}
-
-		conf.Paths = append(conf.Paths, newPath)
-	}
-
-	fileName := "handler.go"
-	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
-	templateFile := "templates/bdd.go.tmpl"
-
-	createFileFromTemplate(filePath, templateFile, conf)
+func matchString(pattern string, s string) (bool, error) {
+	return regexp.MatchString(s, pattern)
 }
+
+//We don't want to have function names of form whenISendGETRequest() but rather iSendGETRequest
+
+func ignore(input string) bool {
+	return input == "When" || input == "And" || input == "Given" || input == "Then"
+}
+
+func generateBdd(path string) {
+	//We use this map to connect each Step struct which represents a step in godog, to the answer that it requires
+	file, err := os.Open(path)
+	if err != nil {
+		log.Fatal()
+	}
+	defer func(file *os.File) {
+		err := file.Close()
+		if err != nil {
+
+		}
+	}(file)
+
+	scanner := bufio.NewScanner(file)
+
+	for scanner.Scan() {
+		var stepConf Step
+		line := scanner.Text()
+		words := strings.Fields(line)
+		stringRegex := "\"([^\"]*)\""
+		for i, word := range words {
+			j := 0
+			if (word == "Scenario:" && i == 0) || (word == "Feature:" && i == 0) {
+				break
+			} else if word == "When" || word == "And" {
+				for _, word := range words {
+					value, _ := matchString(stringRegex, word)
+					ignore := ignore(word)
+					if !value && !ignore {
+						stepConf.Name = stepConf.Name + word
+					} else {
+						j = j + 1
+						//j serves as a counter for how many arguments we get
+						argument := "arg" + strconv.Itoa(j)
+						stepConf.Arguments = append(stepConf.Arguments, argument)
+					}
+				}
+			} else {
+				if word == PUT || word == GET || word == POST || word == DELETE {
+					stepConf.Method = word
+				} else if i >= 1 && (words[i-1] == "url" || words[i-1] == "URL" || words[i-1] == "endpoint" || words[i-1] == "Endpoint") {
+					value, err := matchString(stringRegex, word)
+					if err != nil {
+						return
+					}
+					if value {
+						stepConf.Endpoint = word
+					}
+				} else if n, err := strconv.Atoi(word); err == nil && 200 <= n && n <= 500 {
+					stepConf.StatusCode = word
+				} else if i >= 1 && (words[i-1] == "payload" || words[i-1] == "Payload" || words[i-1] == "PAYLOAD") {
+					value, err := matchString(stringRegex, word)
+					if err != nil {
+						return
+					}
+					if value {
+						stepConf.Payload = word
+					}
+				} else {
+					ignore := ignore(word)
+					if stepConf.Name == "" && !ignore {
+						stepConf.Name = stepConf.Name + strings.ToLower(word)
+					} else {
+						value, _ := matchString(stringRegex, word)
+						if !value {
+							r := []rune(word)
+							stepConf.Name = stepConf.Name + string(append([]rune{unicode.ToUpper(r[0])}, r[1:]...))
+						}
+					}
+				}
+			}
+			j = 0
+		}
+		fmt.Println("Name: ", stepConf.Name)
+		fmt.Println("Endpoint: ", stepConf.Endpoint)
+		fmt.Println("Payload: ", stepConf.Payload)
+		fmt.Println("Status Code: ", stepConf.StatusCode)
+		fmt.Println("Method: ", stepConf.Method)
+	}
+}
+
+//---------END---------
 
 func generateConfigFiles(serverConf ServerConfig) {
 	// create app.env file

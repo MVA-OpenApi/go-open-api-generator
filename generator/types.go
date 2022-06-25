@@ -37,6 +37,15 @@ type ResponseConfig struct {
 	Desciption string
 }
 
+type Step struct {
+	Method     string
+	Endpoint   string
+	Payload    string
+	Name       string
+	StatusCode string
+	Arguments  []string
+}
+
 type OperationConfig struct {
 	Method      string
 	Summary     string
