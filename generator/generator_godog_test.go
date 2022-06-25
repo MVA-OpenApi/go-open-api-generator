@@ -102,7 +102,7 @@ func theResponseForUrlWithRequestMethodShouldBe(method, url string, statusCode i
 		}
 	} else if method == "GET" && matcher {
 		if statusCode != 501 {
-			return fmt.Errorf("Expected 404 but received other status code")
+			return fmt.Errorf("Expected 501 but received other status code")
 		}
 	} else if method == "POST" {
 		if statusCode != 404 {
@@ -110,7 +110,7 @@ func theResponseForUrlWithRequestMethodShouldBe(method, url string, statusCode i
 		}
 	} else if method == "PUT" {
 		if statusCode != 501 {
-			return fmt.Errorf("Expected 404 but received other status code")
+			return fmt.Errorf("Expected 501 but received other status code")
 		}
 	}
 	return nil
