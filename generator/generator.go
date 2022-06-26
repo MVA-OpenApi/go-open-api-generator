@@ -44,7 +44,7 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	createProjectPathDirectory(conf)
 
-	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf)
+	serverConf := generateServerTemplate(spec, conf)
 
 	generateConfigFiles(serverConf)
 
@@ -87,7 +87,7 @@ func createProjectPathDirectory(conf GeneratorConfig) {
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) (serverConf ServerConfig) {
+func generateServerTemplate(spec *openapi3.T, generatorConf GeneratorConfig) (serverConf ServerConfig) {
 	openAPIName := fs.GetFileName(generatorConf.OpenAPIPath)
 	conf := ServerConfig{
 		Port:        DefaultPort,
@@ -96,20 +96,27 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 		OpenAPIName: openAPIName,
 	}
 
-	if portSpec != nil {
-		portStr := portSpec.Default
-		if portSpec.Enum != nil {
-			portStr = portSpec.Enum[0]
-		}
+	strDefaultPort := strconv.Itoa(DefaultPort)
 
-		port, err := strconv.Atoi(portStr)
-		if err != nil {
-			log.Warn().Msg("Failed to convert port, using 8080 instead.")
+	if spec.Servers != nil {
+		serverSpec := spec.Servers[0]
+		if portSpec := serverSpec.Variables["port"]; portSpec != nil {
+			portStr := portSpec.Default
+			if portSpec.Enum != nil {
+				portStr = portSpec.Enum[0]
+			}
+
+			port, err := strconv.Atoi(portStr)
+			if err != nil {
+				log.Warn().Msg("Failed to convert port, using" + strDefaultPort + "instead.")
+			} else {
+				conf.Port = int16(port)
+			}
 		} else {
-			conf.Port = int16(port)
+			log.Warn().Msg("No port field was found, using" + strDefaultPort + "instead.")
 		}
 	} else {
-		log.Warn().Msg("No port field was found, using 8080 instead.")
+		log.Warn().Msg("No servers field was found, using" + strDefaultPort + "instead.")
 	}
 
 	if generatorConf.UseLogger {
