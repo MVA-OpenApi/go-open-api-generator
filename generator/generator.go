@@ -50,6 +50,10 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	generateFrontend(conf)
 
+	if conf.UseLifecycle {
+		generateLifecycleFiles(spec)
+	}
+
 	generateHandlerFuncs(spec, conf)
 
 	GenerateTypes(spec, config)
@@ -166,7 +170,7 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string,
 	}
 
 	for resKey, resRef := range op.Responses {
-		if !validateStatusCode(resKey) {
+		if !validateStatusCode(resKey) && resKey != "default" {
 			log.Warn().Msg("Status code " + resKey + " for endpoint " + methodPath + " is not a valid status code.")
 		}
 
@@ -262,4 +266,24 @@ func generateAuthzFile(conf GeneratorConfig) {
 
 	fs.GenerateFile(filePath)
 	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateLifecycleFiles(spec *openapi3.T) {
+	if spec.Paths.Find("/livez") == nil {
+		log.Info().Msg("Generating default /livez endpoint.")
+
+		op := openapi3.NewOperation()
+		op.AddResponse(200, createOAPIResponse("The server is alive"))
+		updateOAPIOperation(op, "getHealth", "Returns health-state of the server", 200)
+		spec.AddOperation("/livez", "GET", op)
+	}
+	if spec.Paths.Find("/readyz") == nil {
+		log.Info().Msg("Generating default /readyz endpoint.")
+
+		op := openapi3.NewOperation()
+		op.AddResponse(200, createOAPIResponse("The Service is ready"))
+		op.AddResponse(500, createOAPIResponse("The Service is not ready"))
+		updateOAPIOperation(op, "getReady", "Returns ready-state of the server", 200)
+		spec.AddOperation("/readyz", "GET", op)
+	}
 }

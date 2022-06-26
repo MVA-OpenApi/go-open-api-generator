@@ -1,9 +1,10 @@
 package generator
 
 type Flags struct {
-	UseDatabase bool
-	UseLogger   bool
-	UseHTTP2    bool
+	UseDatabase  bool
+	UseLogger    bool
+	UseHTTP2     bool
+	UseLifecycle bool
 }
 
 type AuthConfig struct {
