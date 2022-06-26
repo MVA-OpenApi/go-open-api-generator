@@ -1,7 +1,12 @@
 package handler
 
 import (
-    {{ if .UseAuth }} "{{.ModuleName}}/pkg/authz" {{- end}}
+    {{- if .UseAuth }} 
+        "{{.ModuleName}}/pkg/authz"
+    {{- end}}
+	{{- if .Flags.UseValidation}}
+		"{{.ModuleName}}/pkg/middleware"
+	{{- end}}
 
     "github.com/labstack/echo/v4"
 )
@@ -10,6 +15,15 @@ func NewHandler(e *echo.Echo){
     g := e.Group("")
 
     {{ if .UseGlobalAuth }} g.Use(authz.Authz) {{- end}}
+
+    {{- if .UseValidation }}
+		spec, err := middleware.ParseOpenAPISpecFile("public/openapi.yaml", e.AcquireContext())
+		if err != nil {
+			e.Logger.Fatal(err)
+		}
+		g.Use(middleware.Validation(spec, e))
+	{{- end }}
+
 
     {{- range .Paths }}
         {{$path := .Path}}

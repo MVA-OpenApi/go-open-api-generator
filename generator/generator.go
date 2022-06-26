@@ -14,14 +14,15 @@ import (
 )
 
 const (
-	Cmd         = "cmd"
-	Pkg         = "pkg"
-	UtilPkg     = "util"
-	HandlerPkg  = "handler"
-	DatabasePkg = "db"
-	ModelPkg    = "model"
-	AuthzPkg    = "authz"
-	DefaultPort = 8080
+	Cmd               = "cmd"
+	Pkg               = "pkg"
+	UtilPkg           = "util"
+	HandlerPkg        = "handler"
+	DatabasePkg       = "db"
+	ModelPkg          = "model"
+	AuthzPkg          = "authz"
+	MiddlewarePackage = "middleware"
+	DefaultPort       = 8080
 )
 
 var (
@@ -62,6 +63,10 @@ func GenerateServer(conf GeneratorConfig) error {
 		generateAuthzFile(conf)
 	}
 
+	if conf.UseValidation {
+		generateValidation(conf)
+	}
+
 	log.Info().Msg("Created all files successfully.")
 
 	return nil
@@ -76,12 +81,15 @@ func createProjectPathDirectory(conf GeneratorConfig) {
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, UtilPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
+	fs.GenerateFolder(filepath.Join(config.Path, Pkg, ModelPkg))
 	if conf.UseDatabase {
 		fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
 	}
-	fs.GenerateFolder(filepath.Join(config.Path, Pkg, ModelPkg))
 	if conf.UseAuth {
 		fs.GenerateFolder(filepath.Join(config.Path, Pkg, AuthzPkg))
+	}
+	if conf.UseValidation {
+		fs.GenerateFolder(filepath.Join(config.Path, Pkg, MiddlewarePackage))
 	}
 
 	log.Info().Msg("Created project directory.")
@@ -176,14 +184,13 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string,
 }
 
 func generateHandlerFuncs(spec *openapi3.T, genConf GeneratorConfig) {
-	type handlerConf struct {
-		HandlerConfig
-		UseAuth    bool
-		ModuleName string
+	conf := HandlerConfig{
+		ModuleName: genConf.ModuleName,
+		UseAuth:    genConf.UseAuth,
+		Flags:      genConf.Flags,
 	}
-	var conf handlerConf
 	conf.ModuleName = genConf.ModuleName
-	conf.UseAuth = genConf.UseAuth
+	conf.Flags = genConf.Flags
 
 	for _, item := range spec.Security {
 		for key := range item {
@@ -252,6 +259,17 @@ func generateAuthzFile(conf GeneratorConfig) {
 	fileName := "authz.go"
 	filePath := filepath.Join(config.Path, Pkg, AuthzPkg, fileName)
 	templateFile := "templates/authz.go.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateValidation(conf GeneratorConfig) {
+	log.Info().Msg("Adding validation middleware.")
+
+	fileName := "validation.go"
+	filePath := filepath.Join(config.Path, Pkg, MiddlewarePackage, fileName)
+	templateFile := "templates/validation.go.tmpl"
 
 	fs.GenerateFile(filePath)
 	createFileFromTemplate(filePath, templateFile, conf)

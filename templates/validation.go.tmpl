@@ -46,9 +46,9 @@ func Validation(swagger *openapi3.T, e *echo.Echo) echo.MiddlewareFunc {
 
 	return func(next echo.HandlerFunc) echo.HandlerFunc {
 		return func(c echo.Context) error {
-
 			err := ValidateRequest(c, router)
 			if err != nil {
+				// TODO return proper error
 				return err
 			}
 			return next(c)
@@ -75,9 +75,6 @@ func ValidateRequest(c echo.Context, r routers.Router) (err error) {
 
 	// validate request
 	err = openapi3filter.ValidateRequest(bg, requestValidationInput)
-	if openapi3filter.DefaultOptions.ExcludeRequestBody {
-		c.Logger().Info("TRUE")
-	}
 	if err != nil {
 		switch err := err.(type) {
 		case openapi3.MultiError:
@@ -87,21 +84,43 @@ func ValidateRequest(c echo.Context, r routers.Router) (err error) {
 		}
 	}
 	return err
-	// Handle that request
-	// --> YOUR CODE GOES HERE <--
-	/* responseHeaders := http.Header{"Content-Type": []string{"application/json"}}
-	responseCode := 200
-	responseBody := []byte(`{}`)
+}
 
-	// Validate response
+/* func ValidateResponse(c echo.Context, r routers.Router) (err error) {
+	bg := context.Background()
+	req := c.Request()
+	res := c.Response()
+	route, params, err := r.FindRoute(req)
+
+	// no route found.
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.(*routers.RouteError).Reason)
+	}
+
+	requestValidationInput := &openapi3filter.RequestValidationInput{
+		Request:    req,
+		PathParams: params,
+		Route:      route,
+	}
+
 	responseValidationInput := &openapi3filter.ResponseValidationInput{
 		RequestValidationInput: requestValidationInput,
-		Status:                 responseCode,
-		Header:                 responseHeaders,
+		Status:                 res.Status,
+		Header:                 res.Header(),
 	}
-	responseValidationInput.SetBodyBytes(responseBody)
-	_ = openapi3filter.ValidateResponse(c, responseValidationInput) */
-}
+	// validate response
+	responseValidationInput.SetBodyBytes(res)
+	err = openapi3filter.ValidateResponse(bg, responseValidationInput)
+	if err != nil {
+		switch err := err.(type) {
+		case openapi3.MultiError:
+			c.Logger().Info(convertError(err))
+		default:
+			c.Logger().Info(err)
+		}
+	}
+	return err
+} */
 
 // from: https://pkg.go.dev/github.com/getkin/kin-openapi/openapi3filter?utm_source=godoc#example-package
 
