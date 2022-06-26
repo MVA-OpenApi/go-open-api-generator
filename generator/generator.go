@@ -66,6 +66,10 @@ func GenerateServer(conf GeneratorConfig) error {
 		generateAuthzFile(conf)
 	}
 
+	generateMakefile(conf, serverConf)
+
+	generateDockerfile(conf, serverConf)
+
 	log.Info().Msg("Created all files successfully.")
 
 	return nil
@@ -286,4 +290,44 @@ func generateLifecycleFiles(spec *openapi3.T) {
 		updateOAPIOperation(op, "getReady", "Returns ready-state of the server", 200)
 		spec.AddOperation("/readyz", "GET", op)
 	}
+}
+
+func generateMakefile(conf GeneratorConfig, serverConf ServerConfig) {
+	type makefileConfig struct {
+		ModuleName string
+		Port       int16
+	}
+
+	var makefileConf makefileConfig
+	makefileConf.ModuleName = conf.ModuleName
+	makefileConf.Port = serverConf.Port
+
+	log.Info().Msg("Adding Makefile.")
+
+	fileName := "Makefile"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/make-file.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, makefileConf)
+}
+
+func generateDockerfile(conf GeneratorConfig, serverConf ServerConfig) {
+	type dockerfileConfig struct {
+		ModuleName string
+		Port       int16
+	}
+
+	var dockerfileConf dockerfileConfig
+	dockerfileConf.ModuleName = conf.ModuleName
+	dockerfileConf.Port = serverConf.Port
+
+	log.Info().Msg("Adding Dockerfile.")
+
+	fileName := "Dockerfile"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/docker-file.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, dockerfileConf)
 }
