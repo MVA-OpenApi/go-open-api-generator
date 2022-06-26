@@ -163,7 +163,7 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string,
 	}
 
 	for resKey, resRef := range op.Responses {
-		if !validateStatusCode(resKey) {
+		if !validateStatusCode(resKey) && resKey != "default" {
 			log.Warn().Msg("Status code " + resKey + " for endpoint " + methodPath + " is not a valid status code.")
 		}
 
