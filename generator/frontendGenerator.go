@@ -17,22 +17,75 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	// create Schemas struct and add SchemaConfs (with name and properties) for schemas with x-label: form
 	schemas := createSchemas(spec)
 
-	// TODO add methods to these schemas
+	schemasWithMethods := addMethods(schemas)
 
-	fmt.Println(schemas)
+	fmt.Println(schemasWithMethods.List[0].Methods)
 
 	log.Info().Msg("Created Frontend.")
 }
 
-/* func addMethods(spec *openapi3.T, schemas Schemas) {
+// for each schema in schemas.List add CRUD Methods with RESTful best practice API endpoints
+func addMethods(schemas Schemas) (schemasWithMethods Schemas) {
+	schemasWithMethods = schemas
 
-} */
+	for i := range schemasWithMethods.List {
+		tmpSchema := schemasWithMethods.List[i]
+		tmpSchemaMethods := make([]MethodConf, 0)
+		schemaURL := strings.ReplaceAll(strings.ToLower(tmpSchema.Name), " ", "")
+
+		// add GET with path /<schema name>
+		var getConf MethodConf
+		getConf.Type = "get"
+		getConf.Endpoint = schemaURL
+		getConf.BodySchemaRequired = false
+		tmpSchemaMethods = append(tmpSchemaMethods, getConf)
+
+		// add GET with path /<schema name>/:id
+		var getSpecificConf MethodConf
+		getSpecificConf.Type = "get"
+		getSpecificConf.Endpoint = schemaURL
+		getSpecificConf.PathParams = make(map[string]string)
+		getSpecificConf.PathParams["id"] = tmpSchema.Properties["id"]
+		getSpecificConf.BodySchemaRequired = false
+		tmpSchemaMethods = append(tmpSchemaMethods, getSpecificConf)
+
+		// add POST with path /<schema name>
+		var postConf MethodConf
+		postConf.Type = "post"
+		postConf.Endpoint = schemaURL
+		postConf.BodySchemaRequired = true
+		tmpSchemaMethods = append(tmpSchemaMethods, postConf)
+
+		// add PUT with path /<schema name>/:id
+		var putConf MethodConf
+		putConf.Type = "put"
+		putConf.Endpoint = schemaURL
+		putConf.PathParams = make(map[string]string)
+		putConf.PathParams["id"] = tmpSchema.Properties["id"]
+		putConf.BodySchemaRequired = true
+		tmpSchemaMethods = append(tmpSchemaMethods, putConf)
+
+		// add DELETE with path /<schema name>/:id
+		var deleteConf MethodConf
+		deleteConf.Type = "delete"
+		deleteConf.Endpoint = schemaURL
+		deleteConf.PathParams = make(map[string]string)
+		deleteConf.PathParams["id"] = tmpSchema.Properties["id"]
+		deleteConf.BodySchemaRequired = false
+		tmpSchemaMethods = append(tmpSchemaMethods, deleteConf)
+
+		schemasWithMethods.List[i].Methods = tmpSchemaMethods
+
+	}
+
+	return schemasWithMethods
+
+}
 
 func createSchemas(spec *openapi3.T) (schemas Schemas) {
 	schemas.List = make([]SchemaConf, 0)
 
 	schemaStrings := toString(reflect.ValueOf(spec.Components.Schemas).MapKeys())
-	//pathStrings := toString(reflect.ValueOf(spec.Paths).MapKeys())
 
 	for i := range schemaStrings {
 		tmpSchemaName := schemaStrings[i]
@@ -56,35 +109,7 @@ func createSchemas(spec *openapi3.T) (schemas Schemas) {
 			schemas.List = append(schemas.List, schema)
 		}
 
-		//test, _ := spec.Components.Schemas[schemaStrings[i]].JSONLookup("x-label")
-		//fmt.Println(test)
-		/* if schemaProperties != nil {
-			fmt.Println(schemaStrings[i] + "has an x-label")
-		} */
-
-		//fmt.Println(string(schemaProperties)[:])
-
-		// add properties spec.Components.Schemas[schemaStrings[i]].Value.Properties
-		/* schemaProperties := reflect.ValueOf(spec.Components.Schemas[schemaStrings[i]].Value.Properties).MapKeys()
-		for i := range schemaProperties {
-
-		} */
-
 	}
-
-	//fmt.Println(schemaStrings)
-	//fmt.Println(pathStrings)
-
-	/* jsonSchema, _ := spec.Components.Schemas["Store"].MarshalJSON()
-	fmt.Println(string(jsonSchema)[:]) */
-
-	/* jsonComponents, _ := spec.Components.MarshalJSON()
-	fmt.Println("Components:")
-	fmt.Println(string(jsonComponents)[:])
-
-	jsonPaths, _ := spec.Paths["/store"].MarshalJSON()
-	fmt.Println("Paths:")
-	fmt.Println(string(jsonPaths)[:]) */
 
 	return schemas
 

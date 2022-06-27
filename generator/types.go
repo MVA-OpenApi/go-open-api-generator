@@ -69,8 +69,8 @@ type SchemaConf struct {
 
 // struct for each method a schema has
 type MethodConf struct {
-	Type        string
-	Endpoint    string
-	QueryParams map[string]string
-	PathParams  map[string]string
+	Type               string
+	Endpoint           string
+	PathParams         map[string]string
+	BodySchemaRequired bool
 }
