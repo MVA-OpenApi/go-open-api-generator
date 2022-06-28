@@ -185,9 +185,10 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string,
 
 func generateHandlerFuncs(spec *openapi3.T, genConf GeneratorConfig) {
 	conf := HandlerConfig{
-		ModuleName: genConf.ModuleName,
-		UseAuth:    genConf.UseAuth,
-		Flags:      genConf.Flags,
+		ModuleName:  genConf.ModuleName,
+		OpenAPIPath: fs.GetFileNameWithEnding(genConf.OpenAPIPath),
+		UseAuth:     genConf.UseAuth,
+		Flags:       genConf.Flags,
 	}
 	conf.ModuleName = genConf.ModuleName
 	conf.Flags = genConf.Flags

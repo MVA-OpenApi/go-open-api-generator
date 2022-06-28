@@ -17,7 +17,7 @@ func NewHandler(e *echo.Echo){
     {{ if .UseGlobalAuth }} g.Use(authz.Authz) {{- end}}
 
     {{- if .UseValidation }}
-		spec, err := middleware.ParseOpenAPISpecFile("public/openapi.yaml", e.AcquireContext())
+		spec, err := middleware.ParseOpenAPISpecFile("public/{{ .OpenAPIPath }}", e.AcquireContext())
 		if err != nil {
 			e.Logger.Fatal(err)
 		}

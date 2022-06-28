@@ -53,6 +53,7 @@ type PathConfig struct {
 
 type HandlerConfig struct {
 	Paths         []PathConfig
+	OpenAPIPath   string
 	UseAuth       bool
 	UseGlobalAuth bool
 	ModuleName    string
