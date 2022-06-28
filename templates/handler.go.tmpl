@@ -22,6 +22,16 @@ func NewHandler(e *echo.Echo){
 			e.Logger.Fatal(err)
 		}
 		g.Use(middleware.Validation(spec, e))
+        e.HTTPErrorHandler = func(err error, c echo.Context) {
+            switch err := err.(type) {
+            // in case ValidationError just send the message
+            case middleware.ValidationError:
+                c.String(err.Status, err.Message)
+            // in all other cases use default behavior
+            default:
+                e.DefaultHTTPErrorHandler(err, c)
+            }
+        }
 	{{- end }}
 
 

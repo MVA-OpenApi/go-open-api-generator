@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"sort"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -14,6 +15,15 @@ import (
 	"github.com/getkin/kin-openapi/routers/gorillamux"
 	"github.com/labstack/echo/v4"
 )
+
+type ValidationError struct {
+	Message string
+	Status  int
+}
+
+func (m ValidationError) Error() string {
+	return m.Message
+}
 
 func ParseOpenAPISpecFile(path string, c echo.Context) (*openapi3.T, error) {
 	_, err := os.Stat(path)
@@ -38,6 +48,7 @@ func ParseOpenAPISpecFile(path string, c echo.Context) (*openapi3.T, error) {
 	return spec, err
 }
 
+// Return the Validation Middleware
 func Validation(swagger *openapi3.T, e *echo.Echo) echo.MiddlewareFunc {
 	router, err := gorillamux.NewRouter(swagger)
 	if err != nil {
@@ -48,7 +59,6 @@ func Validation(swagger *openapi3.T, e *echo.Echo) echo.MiddlewareFunc {
 		return func(c echo.Context) error {
 			err := ValidateRequest(c, router)
 			if err != nil {
-				// TODO return proper error
 				return err
 			}
 			return next(c)
@@ -71,6 +81,9 @@ func ValidateRequest(c echo.Context, r routers.Router) (err error) {
 		Request:    req,
 		PathParams: params,
 		Route:      route,
+		Options: &openapi3filter.Options{
+			MultiError: true,
+		},
 	}
 
 	// validate request
@@ -78,9 +91,16 @@ func ValidateRequest(c echo.Context, r routers.Router) (err error) {
 	if err != nil {
 		switch err := err.(type) {
 		case openapi3.MultiError:
-			c.Logger().Info(convertError(err))
+			issues := convertError(err)
+			return ValidationError{
+				Status:  400,
+				Message: convertErrMap(issues),
+			}
 		default:
-			c.Logger().Info(err)
+			return ValidationError{
+				Status:  400,
+				Message: err.Error(),
+			}
 		}
 	}
 	return err
@@ -122,8 +142,26 @@ func ValidateRequest(c echo.Context, r routers.Router) (err error) {
 	return err
 } */
 
-// from: https://pkg.go.dev/github.com/getkin/kin-openapi/openapi3filter?utm_source=godoc#example-package
+func convertErrMap(issues map[string][]string) (conv string) {
+	names := make([]string, 0, len(issues))
 
+	for k := range issues {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	for _, k := range names {
+		msgs := issues[k]
+		conv += "===== Start New Error =====\n"
+		conv += k + ":\n"
+		for _, msg := range msgs {
+
+			conv += fmt.Sprintf("\t%s\n", msg)
+		}
+	}
+	return conv
+}
+
+// from: https://pkg.go.dev/github.com/getkin/kin-openapi/openapi3filter?utm_source=godoc#example-package
 const (
 	prefixBody = "@body"
 	unknown    = "@unknown"
@@ -182,5 +220,6 @@ func convertError(me openapi3.MultiError) map[string][]string {
 			issues[unknown] = reasons
 		}
 	}
+
 	return issues
 }
