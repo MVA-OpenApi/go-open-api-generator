@@ -6,7 +6,8 @@ import (
 	{{- end}}
 	"{{.ModuleName}}/pkg/handler"
 	"{{.ModuleName}}/pkg/util"
-	
+	"embed"
+
 	{{- if .UseDatabase}}
 		"os"
 	{{- end}}
@@ -22,6 +23,9 @@ import (
 	{{- end}}
 
 )
+
+//go:embed public
+var embeddedFS embed.FS
 
 func main() {
 	// load config
@@ -46,8 +50,8 @@ func main() {
 	{{ end }}	
 	
 	// serve frontend
-	e.File("/doc", "public/index.html")
-	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
+	e.FileFS("/doc", "public/index.html", embeddedFS)
+	e.FileFS("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml", embeddedFS)
 
 	{{- if .UseHTTP2}}
 	e.Logger.Fatal(e.StartTLS(":" + util.AppConfig.ServerPort, "cert.pem", "key.pem"))

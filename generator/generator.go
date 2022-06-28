@@ -45,11 +45,15 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	createProjectPathDirectory(conf)
 
-	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf)
+	serverConf := generateServerTemplate(spec, conf)
 
 	generateConfigFiles(serverConf)
 
 	generateFrontend(conf)
+
+	if conf.UseLifecycle {
+		generateLifecycleFiles(spec)
+	}
 
 	generateHandlerFuncs(spec, conf)
 
@@ -66,6 +70,10 @@ func GenerateServer(conf GeneratorConfig) error {
 	if conf.UseValidation {
 		generateValidation(conf)
 	}
+
+	generateMakefile(conf, serverConf)
+
+	generateDockerfile(conf, serverConf)
 
 	log.Info().Msg("Created all files successfully.")
 
@@ -95,7 +103,7 @@ func createProjectPathDirectory(conf GeneratorConfig) {
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) (serverConf ServerConfig) {
+func generateServerTemplate(spec *openapi3.T, generatorConf GeneratorConfig) (serverConf ServerConfig) {
 	openAPIName := fs.GetFileName(generatorConf.OpenAPIPath)
 	conf := ServerConfig{
 		Port:        DefaultPort,
@@ -104,20 +112,27 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 		OpenAPIName: openAPIName,
 	}
 
-	if portSpec != nil {
-		portStr := portSpec.Default
-		if portSpec.Enum != nil {
-			portStr = portSpec.Enum[0]
-		}
+	strDefaultPort := strconv.Itoa(DefaultPort)
 
-		port, err := strconv.Atoi(portStr)
-		if err != nil {
-			log.Warn().Msg("Failed to convert port, using 8080 instead.")
+	if spec.Servers != nil {
+		serverSpec := spec.Servers[0]
+		if portSpec := serverSpec.Variables["port"]; portSpec != nil {
+			portStr := portSpec.Default
+			if portSpec.Enum != nil {
+				portStr = portSpec.Enum[0]
+			}
+
+			port, err := strconv.Atoi(portStr)
+			if err != nil {
+				log.Warn().Msg("Failed to convert port, using" + strDefaultPort + "instead.")
+			} else {
+				conf.Port = int16(port)
+			}
 		} else {
-			conf.Port = int16(port)
+			log.Warn().Msg("No port field was found, using" + strDefaultPort + "instead.")
 		}
 	} else {
-		log.Warn().Msg("No port field was found, using 8080 instead.")
+		log.Warn().Msg("No servers field was found, using" + strDefaultPort + "instead.")
 	}
 
 	if generatorConf.UseLogger {
@@ -167,7 +182,7 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string,
 	}
 
 	for resKey, resRef := range op.Responses {
-		if !validateStatusCode(resKey) {
+		if !validateStatusCode(resKey) && resKey != "default" {
 			log.Warn().Msg("Status code " + resKey + " for endpoint " + methodPath + " is not a valid status code.")
 		}
 
@@ -274,4 +289,64 @@ func generateValidation(conf GeneratorConfig) {
 
 	fs.GenerateFile(filePath)
 	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateLifecycleFiles(spec *openapi3.T) {
+	if spec.Paths.Find("/livez") == nil {
+		log.Info().Msg("Generating default /livez endpoint.")
+
+		op := openapi3.NewOperation()
+		op.AddResponse(200, createOAPIResponse("The server is alive"))
+		updateOAPIOperation(op, "getHealth", "Returns health-state of the server", 200)
+		spec.AddOperation("/livez", "GET", op)
+	}
+	if spec.Paths.Find("/readyz") == nil {
+		log.Info().Msg("Generating default /readyz endpoint.")
+
+		op := openapi3.NewOperation()
+		op.AddResponse(200, createOAPIResponse("The Service is ready"))
+		op.AddResponse(500, createOAPIResponse("The Service is not ready"))
+		updateOAPIOperation(op, "getReady", "Returns ready-state of the server", 200)
+		spec.AddOperation("/readyz", "GET", op)
+	}
+}
+
+func generateMakefile(conf GeneratorConfig, serverConf ServerConfig) {
+	type makefileConfig struct {
+		ModuleName string
+		Port       int16
+	}
+
+	var makefileConf makefileConfig
+	makefileConf.ModuleName = conf.ModuleName
+	makefileConf.Port = serverConf.Port
+
+	log.Info().Msg("Adding Makefile.")
+
+	fileName := "Makefile"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/make-file.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, makefileConf)
+}
+
+func generateDockerfile(conf GeneratorConfig, serverConf ServerConfig) {
+	type dockerfileConfig struct {
+		ModuleName string
+		Port       int16
+	}
+
+	var dockerfileConf dockerfileConfig
+	dockerfileConf.ModuleName = conf.ModuleName
+	dockerfileConf.Port = serverConf.Port
+
+	log.Info().Msg("Adding Dockerfile.")
+
+	fileName := "Dockerfile"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/docker-file.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, dockerfileConf)
 }

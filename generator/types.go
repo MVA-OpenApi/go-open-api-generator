@@ -5,6 +5,7 @@ type Flags struct {
 	UseLogger     bool
 	UseHTTP2      bool
 	UseValidation bool
+	UseLifecycle  bool
 }
 
 type AuthConfig struct {

@@ -17,6 +17,7 @@ var (
 	loggerFlag     bool
 	databaseFlag   bool
 	http2Flag      bool
+	lifecycleFlag  bool
 	validationFlag bool
 )
 
@@ -56,6 +57,7 @@ var generateCmd = &cobra.Command{
 				UseDatabase:   databaseFlag,
 				UseLogger:     loggerFlag,
 				UseHTTP2:      http2Flag,
+				UseLifecycle:  lifecycleFlag,
 				UseValidation: validationFlag,
 			},
 		}
@@ -96,6 +98,7 @@ func init() {
 	generateCmd.Flags().BoolVarP(&databaseFlag, "database", "d", false, "add sqlite3 database in generated code (default is 'false')")
 	generateCmd.Flags().BoolVarP(&http2Flag, "http2", "H", false, "use HTTP/2 in generated code (default is 'false')")
 	generateCmd.Flags().BoolVarP(&validationFlag, "validation", "V", false, "use validation middleware (default is 'false')")
+	generateCmd.Flags().BoolVarP(&lifecycleFlag, "lifecycle", "L", false, "generate default livez and readyz endpoints (default is 'false')")
 
 	// add generate command
 	rootCmd.AddCommand(generateCmd)
