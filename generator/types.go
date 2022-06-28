@@ -43,7 +43,6 @@ type Step struct {
 	Payload    string
 	Name       string
 	StatusCode string
-	Arguments  []string
 }
 
 type OperationConfig struct {

@@ -1,18 +1,35 @@
-Feature: Server Tests
-    {{- range .Paths }}
-        {{ with .Responses}}
-            {{$path := .Path}}
-            {{- range .}}
-            {{- if eq .Method "POST" or eq .Method "PUT"}}
-                Scenario: Test {{ .Method }} for url {{ $path }}
-                    When I send {{ .Method }} to "{{ $path }}" with payload "10"
-                    Then The response for url "{{ $path }}" with request method "{{ .Method }}" should be 404
-            {{- end }}
-            {{- if eq .Method "GET" or eq .Method "DELETE"}}
-                Scenario: Test {{ .Method }} for url {{ $path }}
-                    When I send {{ .Method }} to "{{ $path }}"
-                    Then The response for url "{{ $path }}" with request method "{{ .Method }}" should be 404
-            {{- end }}
-        {{- end }}
-    {{- end }}
-{{- end }}
+package generator
+
+import (
+	"fmt"
+	"github.com/cucumber/godog"
+	"net/http"
+	"regexp"
+	"strings"
+)
+
+func {{ .Name }} (endpoint string) error{
+    matcher, err := regexp.MatchString("/store/\\{id}", endpoint)
+	if err != nil {
+		panic(err)
+	}
+	url := "http://localhost:8000/" + endpoint
+	data := strings.NewReader("")
+
+	client := &http.Client{}
+	req, err := http.NewRequest(http.MethodGet, url, data)
+	if err != nil {
+		panic(err)
+	}
+
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	if {{.Endpoint}} == endpoint && resp.StatusCode != {{.StatusCode}} {
+		return fmt.Errorf("expected {{.StatusCode}} received %d", resp.StatusCode)
+	}
+	
+	return nil
+}

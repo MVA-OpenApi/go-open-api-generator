@@ -244,7 +244,9 @@ func ignore(input string) bool {
 }
 
 func generateBdd(path string) {
-	//We use this map to connect each Step struct which represents a step in godog, to the answer that it requires
+	//We use this map to connect each Step struct which represents a step in godog, to the status code that it requires
+	//It takes the name of the
+	m := make(map[string]int)
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal()
@@ -290,6 +292,10 @@ func generateBdd(path string) {
 						}
 					}
 				}
+			}
+			if len(stepConf.StatusCode) != 0 {
+				code, _ := strconv.Atoi(stepConf.StatusCode)
+				m[stepConf.Name] = code
 			}
 		}
 	}
