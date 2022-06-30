@@ -233,20 +233,26 @@ func generateHandlerFuncs(spec *openapi3.T, genConf GeneratorConfig) {
 
 //---------GENERATION OF BDD---------
 
-func matchString(pattern string, s string) (bool, error) {
-	return regexp.MatchString(s, pattern)
-}
-
-//We don't want to have function names of form whenISendGETRequest() but rather iSendGETRequest
-
 func ignore(input string) bool {
 	return input == "When" || input == "And" || input == "Given" || input == "Then"
 }
 
-func generateBdd(path string) {
-	//We use this map to connect each Step struct which represents a step in godog, to the status code that it requires
-	//It takes the name of the
+func retrieveRegex(input string) string {
+	regex := ""
+	for _, j := range input {
+		if string(j) == "{" {
+			regex = regex + "\\\\" + string(j)
+		} else {
+			regex = regex + string(j)
+		}
+	}
+	return regex
+}
+
+func parseSteps(path string) []Step {
+	//We use this map to connect each Step struct which represents a step in godog, to the answer that it requires
 	m := make(map[string]int)
+	var listOfSteps []Step
 	file, err := os.Open(path)
 	if err != nil {
 		log.Fatal()
@@ -255,19 +261,37 @@ func generateBdd(path string) {
 
 	scanner := bufio.NewScanner(file)
 
+	var prevStepConf Step
+	regexedPath := ""
+
 	for scanner.Scan() {
 		var stepConf Step
+		stepConf.Mapping = make(map[string]int)
+		stepConf.RegexAndCode = make(map[string]int)
 		line := scanner.Text()
 		words := strings.Fields(line)
 		stringRegex := "\"([^\"]*)\""
 		for i, word := range words {
-			if (word == "Scenario:" && i == 0) || (word == "Feature:" && i == 0) {
+			//We skip this since we don't need to create any method for them
+			if word == "Scenario:" && i == 0 {
+				for _, j := range words[i:] {
+					if ok, _ := regexp.MatchString(stringRegex, j); ok {
+						regexedPath = retrieveRegex(j)
+					}
+				}
+				break
+			}
+			if word == "Feature:" && i == 0 {
 				break
 			} else {
+				//Retrieve the Method being used
 				if word == PUT || word == GET || word == POST || word == DELETE {
-					stepConf.Method = word
-				} else if i >= 1 && (words[i-1] == "url" || words[i-1] == "URL" || words[i-1] == "endpoint" || words[i-1] == "Endpoint") {
-					//start := i
+					stepConf.Name = stepConf.Name + word
+					word = strings.ToLower(word)
+					r := []rune(word)
+					stepConf.Method = string(append([]rune{unicode.ToUpper(r[0])}, r[1:]...))
+				} else if i >= 1 && (words[i-1] == "to") {
+					//After "to" in the predefined structure we always receive the endpoint
 					for _, word := range words[i:] {
 						if value, _ := regexp.MatchString(stringRegex, word); value {
 							stepConf.Endpoint = stepConf.Endpoint + word
@@ -275,16 +299,32 @@ func generateBdd(path string) {
 						}
 					}
 				} else if n, err := strconv.Atoi(word); err == nil && 200 <= n && n <= 600 {
+					//Retrieve the status code
 					stepConf.StatusCode = word
 				} else if i >= 1 && (words[i-1] == "payload" || words[i-1] == "Payload" || words[i-1] == "PAYLOAD") {
-					for _, word := range words[i:] {
-						stepConf.Payload = stepConf.Payload + word
+					//After the word "payload" in the predefined structure comes the payload of the request
+					for _, j := range words[i:] {
+						stepConf.Payload = stepConf.Payload + j
 					}
+					//If we are in a "Then" part of the scenario, the next word is "the", there receive the status code
+					//We also change the values in the previous step. We do this because the previous step, the actual
+					//method is where we send the requests to the server whereas the "Then" part of the scenario
+					//is just used to check whether the response was correct based on the request's method, url and payload
+					if i == len(words)-1 && len(stepConf.StatusCode) == 0 {
+						prevStepConf = stepConf
+					}
+					break
 				} else {
+					//Fill the name of the step. ignore() is used to ignore keywords such as When, Then, Given, And, since
+					//they are not part of the name
 					ignore := ignore(word)
 					if len(stepConf.Name) == 0 && !ignore {
+						//if the name is empty we add the word in it but firstly it has to be lower cased since the name uses
+						//camel case convention
 						stepConf.Name = stepConf.Name + strings.ToLower(word)
 					} else if len(stepConf.Name) != 0 && !ignore {
+						//if the name is not empty we capitalize the first letter of the word and add the word to the name
+						//we also want to make sure that the name does not contain any substrings in quotes
 						value, _ := regexp.MatchString(stringRegex, word)
 						if !value {
 							r := []rune(word)
@@ -292,13 +332,150 @@ func generateBdd(path string) {
 						}
 					}
 				}
+				//we receive the status code of the step in the "Then" part of the scenario. That's why we use prevStepConf.
+				if strings.HasPrefix(stepConf.Name, "the") {
+					code, _ := strconv.Atoi(stepConf.StatusCode)
+					if code != 0 && len(regexedPath) != 0 {
+						m[prevStepConf.Endpoint] = code
+						prevStepConf.RegexPaths = append(prevStepConf.RegexPaths, regexedPath)
+						prevStepConf.StatusCode = strconv.Itoa(code)
+						value, _ := strconv.Atoi(prevStepConf.StatusCode)
+						prevStepConf.Mapping[prevStepConf.Endpoint] = value
+						prevStepConf.RegexAndCode[regexedPath] = value
+					}
+				}
+				//Finally if we have arrived at the end of the string we are looking to add prevStepConf in our list of steps
+				if i == len(words)-1 {
+					flag := false
+					code, _ := strconv.Atoi(stepConf.StatusCode)
+					//Because the function handlers are not implemented, the payloads do not play an important role. Endpoints do.
+					m[stepConf.Endpoint] = code
+					if strings.HasPrefix(stepConf.Name, "the") && len(prevStepConf.Name) != 0 {
+						//if the list of steps is empty then we just add the step
+						if len(listOfSteps) == 0 {
+							listOfSteps = append(listOfSteps, prevStepConf)
+						} else {
+							//otherwise we check whether there is a step with the same name or not
+							for _, j := range listOfSteps {
+								//if there is, then we want to add this step to the mapping of the step with the same name
+								//thus we don't add redundant steps in the list, and also
+								//it is exactly like the schema that godog requires in order to work
+								if prevStepConf.Name == j.Name {
+									flag = true
+									value, _ := strconv.Atoi(prevStepConf.StatusCode)
+									j.Mapping[prevStepConf.Endpoint] = value
+									j.RegexAndCode[regexedPath] = value
+									j.RegexPaths = append(j.RegexPaths, prevStepConf.RegexPaths[0])
+								}
+							}
+							//in the case where the name is not there and also the list is not empty we use the flag to check
+							//and we just append the step to the list
+							if flag == false {
+								listOfSteps = append(listOfSteps, prevStepConf)
+							}
+						}
+					}
+				}
 			}
-			if len(stepConf.StatusCode) != 0 {
-				code, _ := strconv.Atoi(stepConf.StatusCode)
-				m[stepConf.Name] = code
+			//after we're done with the initialization of the stepConf, we initialize prevStepConf and move on
+			if i == len(words)-1 && len(stepConf.StatusCode) == 0 {
+				prevStepConf = stepConf
 			}
 		}
 	}
+	//add the string that we want to use in the godog file
+	for i, v := range listOfSteps {
+		v.RealName = v.RealName + createName(v.Name)
+		localhost := "http://localhost:8080"
+		for _, k := range v.RegexPaths {
+			in := strings.ReplaceAll(localhost+k, "\"", "")
+			v.PathsWithHost = append(v.PathsWithHost, in)
+		}
+		listOfSteps[i] = v
+	}
+	return listOfSteps
+}
+
+//add space between words in camelcase
+var matchFirstCap = regexp.MustCompile("(.)([A-Z][a-z]+)")
+var matchAllCap = regexp.MustCompile("([a-z0-9])([A-Z])")
+
+func AddedSpace(str string) string {
+	snake := matchFirstCap.ReplaceAllString(str, "${1} ${2}")
+	snake = matchAllCap.ReplaceAllString(snake, "${1} ${2}")
+	return strings.ToLower(snake)
+}
+
+//we use this to create the string for the function which will be used in InitializeScenario() function
+func createName(str string) string {
+	nameToReturn := ""
+	transformed := AddedSpace(str)
+	for i, word := range strings.Fields(transformed) {
+		if word == "i" && i == 0 {
+			nameToReturn = nameToReturn + "^" + strings.ToUpper(word) + " "
+		} else if word == "to" {
+			nameToReturn = nameToReturn + "to \"([^\"]*)\" "
+		} else if word == "payload" {
+			nameToReturn = nameToReturn + "payload \"([^\"]*)\""
+		} else if i == len(transformed)-1 {
+			nameToReturn = nameToReturn + "$"
+		} else if word == "put" || word == "get" || word == "post" || word == "delete" {
+			nameToReturn = nameToReturn + strings.ToUpper(word) + " "
+		} else {
+			nameToReturn = nameToReturn + word + " "
+		}
+	}
+	return nameToReturn
+}
+
+func contains(element string, arr []string) bool {
+	for _, j := range arr {
+		if element == j {
+			return true
+		}
+	}
+	return false
+}
+
+func getAllEndpoints(listing Listing) []string {
+	var slice []string
+	for _, k := range listing.Steps {
+		for _, j := range k.RegexPaths {
+			if !contains(j, slice) {
+				slice = append(slice, j)
+			}
+		}
+	}
+	return slice
+}
+
+//func generateBdd(path string) {
+//	var step Listing
+//	step.Steps = parseSteps(path)
+//	step.UniqueEndpoints = getAllEndpoints(step)
+//
+//	f, err := os.OpenFile("./file.go", os.O_WRONLY, os.ModeAppend)
+//	if err != nil {
+//		panic(err)
+//	}
+//
+//	content, _ := ioutil.ReadFile("bdd.tmpl")
+//	t := template.Must(template.New("bdd-tmpl").Parse(string(content)))
+//	err1 := t.Execute(f, step)
+//	if err1 != nil {
+//		panic(err1)
+//	}
+//}
+
+func generateBdd(path string) {
+	var step Listing
+	step.Steps = parseSteps(path)
+	step.UniqueEndpoints = getAllEndpoints(step)
+
+	fileName := "handler.go"
+	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
+	templateFile := "templates/bdd.tmpl"
+	createFileFromTemplate(filePath, templateFile, step)
 }
 
 //---------END---------
