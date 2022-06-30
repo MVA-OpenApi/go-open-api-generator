@@ -449,24 +449,6 @@ func getAllEndpoints(listing Listing) []string {
 	return slice
 }
 
-//func generateBdd(path string) {
-//	var step Listing
-//	step.Steps = parseSteps(path)
-//	step.UniqueEndpoints = getAllEndpoints(step)
-//
-//	f, err := os.OpenFile("./file.go", os.O_WRONLY, os.ModeAppend)
-//	if err != nil {
-//		panic(err)
-//	}
-//
-//	content, _ := ioutil.ReadFile("bdd.tmpl")
-//	t := template.Must(template.New("bdd-tmpl").Parse(string(content)))
-//	err1 := t.Execute(f, step)
-//	if err1 != nil {
-//		panic(err1)
-//	}
-//}
-
 func generateBdd(path string) {
 	var step Listing
 	step.Steps = parseSteps(path)
