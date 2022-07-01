@@ -19,7 +19,10 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 
 	schemasWithMethods := addMethods(schemas)
 
-	fmt.Println(schemasWithMethods.List[0].Methods)
+	fmt.Println(schemasWithMethods.List)
+
+	// TODO
+	// create a schema component and a schema form component for each schema inside schemasWithMethods
 
 	log.Info().Msg("Created Frontend.")
 }
