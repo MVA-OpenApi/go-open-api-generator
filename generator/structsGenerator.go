@@ -3,6 +3,7 @@ package generator
 import (
 	"path/filepath"
 	"strings"
+	"unicode"
 
 	"github.com/getkin/kin-openapi/openapi3"
 )
@@ -17,8 +18,9 @@ type ModelCOnfig struct {
 }
 
 type TypeDefinition struct {
-	Name string
-	Type string
+	Name        string
+	Type        string
+	MarshalName string
 	// only if Type is struct
 	NestedTypes []TypeDefinition
 }
@@ -57,20 +59,26 @@ func generateStructDefs(schemas *openapi3.Schemas) map[string][]TypeDefinition {
 
 func generateTypeDefs(properties *openapi3.Schemas) []TypeDefinition {
 	typeDefs := make([]TypeDefinition, len(*properties))
-
+	i := 0
 	for name, property := range *properties {
 		goType, nested := toGoType(property)
 		var nestedGoTypes []TypeDefinition
 		if nested {
 			nestedGoTypes = generateTypeDefs(&property.Value.Properties)
 		}
+
+		// first letter to lower case
+		marshalName := []rune(name)
+		marshalName[0] = unicode.ToLower(marshalName[0])
 		propertyDef := TypeDefinition{
 			name,
 			goType,
+			string(marshalName),
 			nestedGoTypes,
 		}
-		typeDefs = append(typeDefs, propertyDef)
+		typeDefs[i], i = propertyDef, i+1
 	}
+
 	return typeDefs
 }
 
