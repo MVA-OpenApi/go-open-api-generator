@@ -1,0 +1,225 @@
+package middleware
+
+import (
+	"context"
+	"errors"
+	"fmt"
+	"net/http"
+	"os"
+	"sort"
+	"strings"
+
+	"github.com/getkin/kin-openapi/openapi3"
+	"github.com/getkin/kin-openapi/openapi3filter"
+	"github.com/getkin/kin-openapi/routers"
+	"github.com/getkin/kin-openapi/routers/gorillamux"
+	"github.com/labstack/echo/v4"
+)
+
+type ValidationError struct {
+	Message string
+	Status  int
+}
+
+func (m ValidationError) Error() string {
+	return m.Message
+}
+
+func ParseOpenAPISpecFile(path string, c echo.Context) (*openapi3.T, error) {
+	_, err := os.Stat(path)
+	if err != nil {
+		return nil, errors.New("file not found")
+	}
+	loader := openapi3.NewLoader()
+
+	spec, err := loader.LoadFromFile(path)
+	if err != nil {
+		return nil, err
+	}
+	c.Logger().Info("OpenAPI Spec file loaded successfully.")
+
+	err = spec.Validate(loader.Context)
+	if err != nil {
+		return nil, err
+	}
+
+	c.Logger().Info("OpenAPI Spec file validated successfully.")
+
+	return spec, err
+}
+
+// Return the Validation Middleware
+func Validation(swagger *openapi3.T, e *echo.Echo) echo.MiddlewareFunc {
+	router, err := gorillamux.NewRouter(swagger)
+	if err != nil {
+		panic(err)
+	}
+
+	return func(next echo.HandlerFunc) echo.HandlerFunc {
+		return func(c echo.Context) error {
+			err := ValidateRequest(c, router)
+			if err != nil {
+				return err
+			}
+			return next(c)
+		}
+	}
+}
+
+func ValidateRequest(c echo.Context, r routers.Router) (err error) {
+	bg := context.Background()
+
+	req := c.Request()
+	route, params, err := r.FindRoute(req)
+
+	// no route found.
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.(*routers.RouteError).Reason)
+	}
+
+	requestValidationInput := &openapi3filter.RequestValidationInput{
+		Request:    req,
+		PathParams: params,
+		Route:      route,
+		Options: &openapi3filter.Options{
+			MultiError: true,
+		},
+	}
+
+	// validate request
+	err = openapi3filter.ValidateRequest(bg, requestValidationInput)
+	if err != nil {
+		switch err := err.(type) {
+		case openapi3.MultiError:
+			issues := convertError(err)
+			return ValidationError{
+				Status:  400,
+				Message: convertErrMap(issues),
+			}
+		default:
+			return ValidationError{
+				Status:  400,
+				Message: err.Error(),
+			}
+		}
+	}
+	return err
+}
+
+/* func ValidateResponse(c echo.Context, r routers.Router) (err error) {
+	bg := context.Background()
+	req := c.Request()
+	res := c.Response()
+	route, params, err := r.FindRoute(req)
+
+	// no route found.
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, err.(*routers.RouteError).Reason)
+	}
+
+	requestValidationInput := &openapi3filter.RequestValidationInput{
+		Request:    req,
+		PathParams: params,
+		Route:      route,
+	}
+
+	responseValidationInput := &openapi3filter.ResponseValidationInput{
+		RequestValidationInput: requestValidationInput,
+		Status:                 res.Status,
+		Header:                 res.Header(),
+	}
+	// validate response
+	responseValidationInput.SetBodyBytes(res)
+	err = openapi3filter.ValidateResponse(bg, responseValidationInput)
+	if err != nil {
+		switch err := err.(type) {
+		case openapi3.MultiError:
+			c.Logger().Info(convertError(err))
+		default:
+			c.Logger().Info(err)
+		}
+	}
+	return err
+} */
+
+func convertErrMap(issues map[string][]string) (conv string) {
+	names := make([]string, 0, len(issues))
+
+	for k := range issues {
+		names = append(names, k)
+	}
+	sort.Strings(names)
+	for _, k := range names {
+		msgs := issues[k]
+		conv += "===== Start New Error =====\n"
+		conv += k + ":\n"
+		for _, msg := range msgs {
+
+			conv += fmt.Sprintf("\t%s\n", msg)
+		}
+	}
+	return conv
+}
+
+// from: https://pkg.go.dev/github.com/getkin/kin-openapi/openapi3filter?utm_source=godoc#example-package
+const (
+	prefixBody = "@body"
+	unknown    = "@unknown"
+)
+
+func convertError(me openapi3.MultiError) map[string][]string {
+	issues := make(map[string][]string)
+	for _, err := range me {
+		switch err := err.(type) {
+		case *openapi3.SchemaError:
+			// Can inspect schema validation errors here, e.g. err.Value
+			field := prefixBody
+			if path := err.JSONPointer(); len(path) > 0 {
+				field = fmt.Sprintf("%s.%s", field, strings.Join(path, "."))
+			}
+			if _, ok := issues[field]; !ok {
+				issues[field] = make([]string, 0, 3)
+			}
+			issues[field] = append(issues[field], err.Error())
+		case *openapi3filter.RequestError: // possible there were multiple issues that failed validation
+			if err, ok := err.Err.(openapi3.MultiError); ok {
+				for k, v := range convertError(err) {
+					if _, ok := issues[k]; !ok {
+						issues[k] = make([]string, 0, 3)
+					}
+					issues[k] = append(issues[k], v...)
+				}
+				continue
+			}
+
+			// check if invalid HTTP parameter
+			if err.Parameter != nil {
+				prefix := err.Parameter.In
+				name := fmt.Sprintf("%s.%s", prefix, err.Parameter.Name)
+				if _, ok := issues[name]; !ok {
+					issues[name] = make([]string, 0, 3)
+				}
+				issues[name] = append(issues[name], err.Error())
+				continue
+			}
+
+			// check if requestBody
+			if err.RequestBody != nil {
+				if _, ok := issues[prefixBody]; !ok {
+					issues[prefixBody] = make([]string, 0, 3)
+				}
+				issues[prefixBody] = append(issues[prefixBody], err.Error())
+				continue
+			}
+		default:
+			reasons, ok := issues[unknown]
+			if !ok {
+				reasons = make([]string, 0, 3)
+			}
+			reasons = append(reasons, err.Error())
+			issues[unknown] = reasons
+		}
+	}
+
+	return issues
+}
