@@ -21,8 +21,45 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 
 	fmt.Println(schemasWithMethods.List)
 
-	// TODO
-	// create a schema component and a schema form component for each schema inside schemasWithMethods
+	// create folders
+	frontendPath := filepath.Join(conf.OutputPath, "frontend")
+	frontendPublicPath := filepath.Join(frontendPath, "public")
+	frontendSrcPath := filepath.Join(frontendPath, "src")
+	frontendStylesPath := filepath.Join(frontendSrcPath, "styles")
+	frontendComponentsPath := filepath.Join(frontendSrcPath, "components")
+	frontendSchemasPath := filepath.Join(frontendComponentsPath, "schemas")
+	frontendSchemaFormsPath := filepath.Join(frontendSchemasPath, "schemaforms")
+
+	fs.GenerateFolder(frontendPath)
+	fs.GenerateFolder(frontendPublicPath)
+	fs.GenerateFolder(frontendSrcPath)
+	fs.GenerateFolder(frontendStylesPath)
+	fs.GenerateFolder(frontendComponentsPath)
+	fs.GenerateFolder(frontendSchemasPath)
+	fs.GenerateFolder(frontendSchemaFormsPath)
+
+	// create "static templates"
+	createFileFromTemplate(filepath.Join(frontendPath, ".gitignore"), "templates/frontend/gitignore.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendPath, "package.json"), "templates/frontend/package.json.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendPath, "README.md"), "templates/frontend/README.md.tmpl", nil)
+
+	createFileFromTemplate(filepath.Join(frontendStylesPath, "index.css"), "templates/frontend/src/styles/index.css.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendStylesPath, "loadsubmit.css"), "templates/frontend/src/styles/loadsubmit.css.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendStylesPath, "schemaform.css"), "templates/frontend/src/styles/schemaform.css.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendStylesPath, "sidebar.css"), "templates/frontend/src/styles/sidebar.css.tmpl", nil)
+
+	createFileFromTemplate(filepath.Join(frontendSrcPath, "api.js"), "templates/frontend/src/api.js.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendSrcPath, "index.js"), "templates/frontend/src/index.js.tmpl", nil)
+
+	createFileFromTemplate(filepath.Join(frontendComponentsPath, "IDForm.js"), "templates/frontend/src/components/IDForm.js.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendComponentsPath, "LoadSubmit.js"), "templates/frontend/src/components/LoadSubmit.js.tmpl", nil)
+
+	// create App.js
+	createFileFromTemplate(filepath.Join(frontendSrcPath, "App.js"), "templates/frontend/src/App.js.tmpl", schemasWithMethods)
+
+	// create SideBar.js
+
+	// create a schema componenta and a schema form components for each schema inside schemasWithMethods
 
 	log.Info().Msg("Created Frontend.")
 }
@@ -87,6 +124,7 @@ func addMethods(schemas Schemas) (schemasWithMethods Schemas) {
 
 func createSchemas(spec *openapi3.T) (schemas Schemas) {
 	schemas.List = make([]SchemaConf, 0)
+	schemas.IsNotEmpty = false
 
 	schemaStrings := toString(reflect.ValueOf(spec.Components.Schemas).MapKeys())
 
@@ -99,17 +137,20 @@ func createSchemas(spec *openapi3.T) (schemas Schemas) {
 			var schema SchemaConf
 			schema.Properties = make(map[string]string)
 
-			// add name
-			schema.Name = tmpSchemaName
+			// add names
+			schema.Name = strings.ReplaceAll(strings.ToLower(tmpSchemaName), " ", "")
+			schema.H1Name = strings.Title(tmpSchemaName)
+			schema.ComponentName = strings.ReplaceAll(schema.H1Name, " ", "")
 
 			// add properties
 			tmpSchemaPropertyNames := reflect.ValueOf(spec.Components.Schemas[tmpSchemaName].Value.Properties).MapKeys()
 			for j := range tmpSchemaPropertyNames {
 				tmpSchemaPropertyName := tmpSchemaPropertyNames[j].Interface().(string)
-				schema.Properties[tmpSchemaPropertyName] = spec.Components.Schemas[tmpSchemaName].Value.Properties[tmpSchemaPropertyName].Value.Type
+				schema.Properties[strings.Title(tmpSchemaPropertyName)] = spec.Components.Schemas[tmpSchemaName].Value.Properties[tmpSchemaPropertyName].Value.Type
 			}
 
 			schemas.List = append(schemas.List, schema)
+			schemas.IsNotEmpty = true
 		}
 
 	}

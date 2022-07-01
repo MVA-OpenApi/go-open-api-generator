@@ -57,14 +57,17 @@ type HandlerConfig struct {
 
 // struct for all schemas that have to be in the frontend
 type Schemas struct {
-	List []SchemaConf
+	List       []SchemaConf
+	IsNotEmpty bool
 }
 
 // struct for the specific schema in Schemas
 type SchemaConf struct {
-	Name       string
-	Properties map[string]string
-	Methods    []MethodConf
+	Name          string            // all in lower case and without spaces
+	H1Name        string            // correct grammar, spaces allowed
+	ComponentName string            // first letter upper case, no spaces
+	Properties    map[string]string // key has first letter in upper case
+	Methods       []MethodConf
 }
 
 // struct for each method a schema has
