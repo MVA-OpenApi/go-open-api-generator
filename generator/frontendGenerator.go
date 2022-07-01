@@ -58,6 +58,7 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	createFileFromTemplate(filepath.Join(frontendSrcPath, "App.js"), "templates/frontend/src/App.js.tmpl", schemasWithMethods)
 
 	// create SideBar.js
+	createFileFromTemplate(filepath.Join(frontendComponentsPath, "SideBar.js"), "templates/frontend/src/components/SideBar.js.tmpl", schemasWithMethods)
 
 	// create a schema componenta and a schema form components for each schema inside schemasWithMethods
 

@@ -7,30 +7,14 @@ import "../styles/sidebar.css";
 function SideBar() {
   return (
     <div className="sidebar">
-      <Button
+      {{ with .List }} {{range .}}<Button
         variant="contained"
         component={Link}
-        to="/store"
+        to="/{{ .Name }}"
         className="link-button"
       >
-        Store
-      </Button>
-      <Button
-        variant="contained"
-        component={Link}
-        to="/store2"
-        className="link-button"
-      >
-        Store 2
-      </Button>
-      <Button
-        variant="contained"
-        component={Link}
-        to="/employees"
-        className="link-button"
-      >
-        Employees
-      </Button>
+        {{ .H1Name }}
+      </Button> {{ end }}{{ end }}
     </div>
   );
 }
