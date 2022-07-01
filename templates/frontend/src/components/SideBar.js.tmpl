@@ -1,14 +1,17 @@
-import React from "react";
+import React, { useState } from "react";
 import Button from "@mui/material/Button";
 import { Link } from "react-router-dom";
 
 import "../styles/sidebar.css";
 
 function SideBar() {
+  const [selectedSchema, setSelectedSchema] = useState("{{ if .IsNotEmpty}}{{ (index .List 0).Name }}{{ end }}");
+
   return (
     <div className="sidebar">
       {{ with .List }} {{range .}}<Button
-        variant="contained"
+        variant={selectedSchema === "{{ .Name }}" ? "contained" : "outlined"}
+        onClick={() => setSelectedSchema("{{ .Name }}")}
         component={Link}
         to="/{{ .Name }}"
         className="link-button"
