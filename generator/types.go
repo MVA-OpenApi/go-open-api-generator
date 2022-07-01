@@ -63,11 +63,18 @@ type Schemas struct {
 
 // struct for the specific schema in Schemas
 type SchemaConf struct {
-	Name          string            // all in lower case and without spaces
-	H1Name        string            // correct grammar, spaces allowed
-	ComponentName string            // first letter upper case, no spaces
-	Properties    map[string]string // key has first letter in upper case
+	Name          string // all in lower case and without spaces
+	H1Name        string // correct grammar, spaces allowed
+	ComponentName string // first letter upper case, no spaces
+	Properties    []PropertyConf
 	Methods       []MethodConf
+}
+
+// struct for each property of a schema
+type PropertyConf struct {
+	Name      string
+	LabelName string
+	Type      string
 }
 
 // struct for each method a schema has
