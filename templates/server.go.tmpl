@@ -12,9 +12,8 @@ import (
 	{{- end}}
 
 	"github.com/labstack/echo/v4"
-	{{- if .UseLogger}}
-		"github.com/labstack/echo/v4/middleware"
-	{{- end}}
+	"github.com/labstack/echo/v4/middleware"
+	
 
 	{{- if .UseDatabase}}
 		"github.com/rs/zerolog"
@@ -28,6 +27,7 @@ func main() {
 
 	// start echo server
 	e := echo.New()
+	e.Use(middleware.CORS())
 
 	{{- if .UseDatabase}}
 		// Set up zerolog time format

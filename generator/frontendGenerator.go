@@ -1,7 +1,6 @@
 package generator
 
 import (
-	"fmt"
 	fs "go-open-api-generator/fileUtils"
 	"path/filepath"
 	"reflect"
@@ -18,8 +17,6 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	schemas := createSchemas(spec)
 
 	//schemasWithMethods := addMethods(schemas)
-
-	fmt.Println(schemas.List)
 
 	// create folders
 	frontendPath := filepath.Join(conf.OutputPath, "frontend")
@@ -48,6 +45,7 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	createFileFromTemplate(filepath.Join(frontendStylesPath, "loadsubmit.css"), "templates/frontend/src/styles/loadsubmit.css.tmpl", nil)
 	createFileFromTemplate(filepath.Join(frontendStylesPath, "schemaform.css"), "templates/frontend/src/styles/schemaform.css.tmpl", nil)
 	createFileFromTemplate(filepath.Join(frontendStylesPath, "sidebar.css"), "templates/frontend/src/styles/sidebar.css.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendStylesPath, "defaultpage.css"), "templates/frontend/src/styles/defaultpage.css.tmpl", nil)
 
 	// files in src directory
 	createFileFromTemplate(filepath.Join(frontendSrcPath, "api.js"), "templates/frontend/src/api.js.tmpl", nil)
@@ -56,6 +54,7 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	// files in components directory
 	createFileFromTemplate(filepath.Join(frontendComponentsPath, "IDForm.js"), "templates/frontend/src/components/IDForm.js.tmpl", nil)
 	createFileFromTemplate(filepath.Join(frontendComponentsPath, "LoadSubmit.js"), "templates/frontend/src/components/LoadSubmit.js.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendComponentsPath, "DefaultPage.js"), "templates/frontend/src/components/DefaultPage.js.tmpl", nil)
 
 	// file in public directory
 	createFileFromTemplate(filepath.Join(frontendPublicPath, "index.html"), "templates/frontend/public/index.html.tmpl", conf)
@@ -77,7 +76,7 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 		createFileFromTemplate(filepath.Join(frontendSchemaFormsPath, tmpSchema.ComponentName+"Form.js"), "templates/frontend/src/components/schemas/schemaforms/SchemaForm.js.tmpl", tmpSchema)
 	}
 
-	log.Info().Msg("Created Frontend.")
+	log.Info().Msg("Created Frontend successfully.")
 }
 
 // for each schema in schemas.List add CRUD Methods with RESTful best practice API endpoints
