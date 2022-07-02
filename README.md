@@ -50,6 +50,16 @@ Available makefile commands:
 - `make build OUTPUT_NAME=executable-name`. This command will build an executable which can be used by the developer outside of the project repository.
 - `make test`. ~~This command runs the unit tests for the generator.~~ (WIP)
 
+# BDD Generation
+The input feature file has to have the following structure in order for the generator to create the godog test file
+- `Scenario: Test GET Request for url <"regex of the url">
+    When I send GET request to <"actual endpoint"> with payload <"payload that needs to be sent">
+    Then The response for url <"endpoint again"> with request method <"request method"> should be <status code. this is the only part that shouldn't be in quotes>`
+- So an example for a scenario would be
+- ```Scenario: Test GET Request for url "/store"
+    When I send GET request to "/store" with payload ""
+    Then The response for url "/store" with request method "GET" should be 404```
+
 
 # Examples
 
