@@ -13,7 +13,6 @@ servers:
 components:
   schemas:
     Store:
-      x-label: form
       type: object
       properties:
         id:
