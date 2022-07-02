@@ -77,3 +77,15 @@ func updateAuthConfig(spec *openapi3.T, conf *GeneratorConfig) {
 		}
 	}
 }
+
+func updateOAPIOperation(op *openapi3.Operation, opID string, opSummary string, opDefault int) {
+	op.OperationID = opID
+	op.Summary = opSummary
+	op.Responses.Default().Value = op.Responses.Get(opDefault).Value
+}
+
+func createOAPIResponse(rDesc string) *openapi3.Response {
+	r := openapi3.NewResponse()
+	r.Description = &rDesc
+	return r
+}

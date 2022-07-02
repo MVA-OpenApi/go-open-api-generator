@@ -1,9 +1,11 @@
 package generator
 
 type Flags struct {
-	UseDatabase bool
-	UseLogger   bool
-	UseHTTP2    bool
+	UseDatabase   bool
+	UseLogger     bool
+	UseHTTP2      bool
+	UseValidation bool
+	UseLifecycle  bool
 }
 
 type AuthConfig struct {
@@ -70,5 +72,9 @@ type PathConfig struct {
 
 type HandlerConfig struct {
 	Paths         []PathConfig
+	OpenAPIPath   string
+	UseAuth       bool
 	UseGlobalAuth bool
+	ModuleName    string
+	Flags
 }

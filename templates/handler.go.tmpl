@@ -1,7 +1,12 @@
 package handler
 
 import (
-    {{ if .UseAuth }} "{{.ModuleName}}/pkg/authz" {{- end}}
+    {{- if .UseAuth }} 
+        "{{.ModuleName}}/pkg/authz"
+    {{- end}}
+	{{- if .Flags.UseValidation}}
+		"{{.ModuleName}}/pkg/middleware"
+	{{- end}}
 
     "github.com/labstack/echo/v4"
 )
@@ -10,6 +15,25 @@ func NewHandler(e *echo.Echo){
     g := e.Group("")
 
     {{ if .UseGlobalAuth }} g.Use(authz.Authz) {{- end}}
+
+    {{- if .UseValidation }}
+		spec, err := middleware.ParseOpenAPISpecFile("public/{{ .OpenAPIPath }}", e.AcquireContext())
+		if err != nil {
+			e.Logger.Fatal(err)
+		}
+		g.Use(middleware.Validation(spec, e))
+        e.HTTPErrorHandler = func(err error, c echo.Context) {
+            switch err := err.(type) {
+            // in case ValidationError just send the message
+            case middleware.ValidationError:
+                c.String(err.Status, err.Message)
+            // in all other cases use default behavior
+            default:
+                e.DefaultHTTPErrorHandler(err, c)
+            }
+        }
+	{{- end }}
+
 
     {{- range .Paths }}
         {{$path := .Path}}

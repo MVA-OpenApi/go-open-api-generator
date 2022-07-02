@@ -6,21 +6,26 @@ import (
 	{{- end}}
 	"{{.ModuleName}}/pkg/handler"
 	"{{.ModuleName}}/pkg/util"
-	
+	"embed"
+
 	{{- if .UseDatabase}}
 		"os"
 	{{- end}}
 
 	"github.com/labstack/echo/v4"
 	{{- if .UseLogger}}
-		"github.com/labstack/echo/v4/middleware"
+		echomiddleware "github.com/labstack/echo/v4/middleware"
 	{{- end}}
 
 	{{- if .UseDatabase}}
 		"github.com/rs/zerolog"
 		"github.com/rs/zerolog/log"
 	{{- end}}
+
 )
+
+//go:embed public
+var embeddedFS embed.FS
 
 func main() {
 	// load config
@@ -40,13 +45,13 @@ func main() {
 	{{- end}}
 
 	handler.NewHandler(e)
-	{{if .UseLogger}}
-		e.Use(middleware.Logger())
-	{{end}}
+	{{- if .UseLogger }}
+		e.Use(echomiddleware.Logger())
+	{{ end }}	
 	
 	// serve frontend
-	e.File("/doc", "public/index.html")
-	e.File("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml")
+	e.FileFS("/doc", "public/index.html", embeddedFS)
+	e.FileFS("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml", embeddedFS)
 
 	{{- if .UseHTTP2}}
 	e.Logger.Fatal(e.StartTLS(":" + util.AppConfig.ServerPort, "cert.pem", "key.pem"))
