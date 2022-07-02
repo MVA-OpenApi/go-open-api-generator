@@ -4,9 +4,11 @@ import (
 	"bufio"
 	"embed"
 	"errors"
+	"io/ioutil"
 	"os"
 	"regexp"
 	"strings"
+	"text/template"
 	"unicode"
 
 	//"go-open-api-generator/generator"
@@ -454,10 +456,17 @@ func generateBdd(path string) {
 	step.Steps = parseSteps(path)
 	step.UniqueEndpoints = getAllEndpoints(step)
 
-	fileName := "handler.go"
-	filePath := filepath.Join(config.Path, Pkg, HandlerPkg, fileName)
-	templateFile := "templates/bdd.tmpl"
-	createFileFromTemplate(filePath, templateFile, step)
+	f, err := os.OpenFile("generation_godog_test.go", os.O_WRONLY, os.ModeAppend)
+	if err != nil {
+		panic(err)
+	}
+
+	content, _ := ioutil.ReadFile("templates/bdd.go.tmpl")
+	t := template.Must(template.New("bdd-tmpl").Parse(string(content)))
+	err1 := t.Execute(f, step)
+	if err1 != nil {
+		panic(err1)
+	}
 }
 
 //---------END---------
