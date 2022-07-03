@@ -1,0 +1,152 @@
+openapi: 3.0.0
+info:
+  title: Example API - Stores
+  description: This is the example OpenAPI Specification file we will use as input for the MVP.
+  version: 1.0.0
+servers:
+  - url: http://localhost:{port}
+    description: Localhost
+    variables:
+      port:
+        default: "8000"
+
+components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    ApiKeyAuth: # arbitrary name for the security scheme
+      type: apiKey
+      in: header # can be "header", "query" or "cookie"
+      name: X-API-KEY # name of the header, query parameter or cookie
+  schemas:
+    Store:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        address:
+          type: string
+        size:
+          type: integer
+          format: int32
+        annual_revenue:
+          type: number
+          format: float
+
+security:
+  - ApiKeyAuth: []
+  - basicAuth: []
+
+paths:
+  /store:
+    get:
+      summary: Returns a list of all the stores.
+      operationId: getAllStores
+      responses:
+        "200":
+          description: An array of Store objects.
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Store"
+    post:
+      summary: Creates a new store.
+      operationId: createStore
+      requestBody:
+        description: A Store object.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Store"
+      responses:
+        "200":
+          description: A store was created successfully.
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid store properties.
+  /store/{id}:
+    get:
+      summary: Returns a store with the given store id.
+      operationId: getStoreByID
+      parameters:
+        - name: id
+          in: path
+          description: Id of store to retrieve.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A store was returned successfully.
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Store"
+        "400":
+          description: Invalid store id.
+        "404":
+          description: Store with given id wasn't found.
+    put:
+      summary: Updates a store with the given store id.
+      operationId: updateStoreByID
+      parameters:
+        - name: id
+          in: path
+          description: Id of store to update.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        description: A Store object.
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/Store"
+      responses:
+        "200":
+          description: The store was updated successfully.
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid store properties/id.
+        "404":
+          description: Store with given id wasn't found.
+    delete:
+      summary: Deletes a store with the given store id.
+      operationId: deleteStoreByID
+      parameters:
+        - name: id
+          in: path
+          description: Id of store to delete.
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        "200":
+          description: A store was deleted successfully.
+          content:
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: Invalid store id.
+        "404":
+          description: Store with given id wasn't found.

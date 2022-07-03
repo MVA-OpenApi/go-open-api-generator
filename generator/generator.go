@@ -14,13 +14,15 @@ import (
 )
 
 const (
-	Cmd         = "cmd"
-	Pkg         = "pkg"
-	UtilPkg     = "util"
-	HandlerPkg  = "handler"
-	DatabasePkg = "db"
-	ModelPkg    = "model"
-	DefaultPort = 8080
+	Cmd               = "cmd"
+	Pkg               = "pkg"
+	UtilPkg           = "util"
+	HandlerPkg        = "handler"
+	DatabasePkg       = "db"
+	ModelPkg          = "model"
+	AuthzPkg          = "authz"
+	MiddlewarePackage = "middleware"
+	DefaultPort       = 8080
 )
 
 var (
@@ -39,26 +41,46 @@ func GenerateServer(conf GeneratorConfig) error {
 	config.Name = conf.ModuleName
 	config.Path = conf.OutputPath
 
-	createProjectPathDirectory()
+	updateAuthConfig(spec, &conf)
 
-	serverConf := generateServerTemplate(spec.Servers[0].Variables["port"], conf)
+	createProjectPathDirectory(conf)
+
+	serverConf := generateServerTemplate(spec, conf)
 
 	generateConfigFiles(serverConf)
 
-	generateFrontend(conf)
+	generateFrontend(spec, conf)
 
-	generateHandlerFuncs(spec)
+	if conf.UseLifecycle {
+		generateLifecycleFiles(spec)
+	}
+
+	generateHandlerFuncs(spec, conf)
 
 	GenerateTypes(spec, config)
 
-	generateDatabaseFiles(conf)
+	if conf.UseDatabase {
+		generateDatabaseFiles(conf)
+	}
+
+	if conf.UseAuth {
+		generateAuthzFile(conf)
+	}
+
+	if conf.UseValidation {
+		generateValidation(conf)
+	}
+
+	generateMakefile(conf, serverConf)
+
+	generateDockerfile(conf, serverConf)
 
 	log.Info().Msg("Created all files successfully.")
 
 	return nil
 }
 
-func createProjectPathDirectory() {
+func createProjectPathDirectory(conf GeneratorConfig) {
 	// Removes previously generated folder structure
 	fs.DeleteFolderRecursively(config.Path)
 
@@ -67,13 +89,21 @@ func createProjectPathDirectory() {
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, UtilPkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, HandlerPkg))
-	fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
 	fs.GenerateFolder(filepath.Join(config.Path, Pkg, ModelPkg))
+	if conf.UseDatabase {
+		fs.GenerateFolder(filepath.Join(config.Path, Pkg, DatabasePkg))
+	}
+	if conf.UseAuth {
+		fs.GenerateFolder(filepath.Join(config.Path, Pkg, AuthzPkg))
+	}
+	if conf.UseValidation {
+		fs.GenerateFolder(filepath.Join(config.Path, Pkg, MiddlewarePackage))
+	}
 
 	log.Info().Msg("Created project directory.")
 }
 
-func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf GeneratorConfig) (serverConf ServerConfig) {
+func generateServerTemplate(spec *openapi3.T, generatorConf GeneratorConfig) (serverConf ServerConfig) {
 	openAPIName := fs.GetFileName(generatorConf.OpenAPIPath)
 	conf := ServerConfig{
 		Port:        DefaultPort,
@@ -82,24 +112,35 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 		OpenAPIName: openAPIName,
 	}
 
-	if portSpec != nil {
-		portStr := portSpec.Default
-		if portSpec.Enum != nil {
-			portStr = portSpec.Enum[0]
-		}
+	strDefaultPort := strconv.Itoa(DefaultPort)
 
-		port, err := strconv.Atoi(portStr)
-		if err != nil {
-			log.Warn().Msg("Failed to convert port, using 8080 instead.")
+	if spec.Servers != nil {
+		serverSpec := spec.Servers[0]
+		if portSpec := serverSpec.Variables["port"]; portSpec != nil {
+			portStr := portSpec.Default
+			if portSpec.Enum != nil {
+				portStr = portSpec.Enum[0]
+			}
+
+			port, err := strconv.Atoi(portStr)
+			if err != nil {
+				log.Warn().Msg("Failed to convert port, using" + strDefaultPort + "instead.")
+			} else {
+				conf.Port = int16(port)
+			}
 		} else {
-			conf.Port = int16(port)
+			log.Warn().Msg("No port field was found, using" + strDefaultPort + "instead.")
 		}
 	} else {
-		log.Warn().Msg("No port field was found, using 8080 instead.")
+		log.Warn().Msg("No servers field was found, using" + strDefaultPort + "instead.")
 	}
 
 	if generatorConf.UseLogger {
 		log.Info().Msg("Adding logging middleware.")
+	}
+
+	if generatorConf.UseHTTP2 {
+		log.Info().Msg("Using HTTP/2 as default protocol")
 	}
 
 	fileName := "main.go"
@@ -112,9 +153,20 @@ func generateServerTemplate(portSpec *openapi3.ServerVariable, generatorConf Gen
 	return conf
 }
 
-func generateHandlerFuncStub(op *openapi3.Operation, method string, path string) (OperationConfig, error) {
+func generateHandlerFuncStub(op *openapi3.Operation, method string, path string, apiSecurityName string) (OperationConfig, error) {
 	var conf OperationConfig
 	var methodPath = method + " " + path
+
+	if op.Security != nil {
+		for _, item := range *op.Security {
+			for key := range item {
+				if key == apiSecurityName {
+					conf.UseAuth = true
+					break
+				}
+			}
+		}
+	}
 
 	conf.Method = method
 
@@ -130,7 +182,7 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string)
 	}
 
 	for resKey, resRef := range op.Responses {
-		if !validateStatusCode(resKey) {
+		if !validateStatusCode(resKey) && resKey != "default" {
 			log.Warn().Msg("Status code " + resKey + " for endpoint " + methodPath + " is not a valid status code.")
 		}
 
@@ -146,14 +198,31 @@ func generateHandlerFuncStub(op *openapi3.Operation, method string, path string)
 	return conf, nil
 }
 
-func generateHandlerFuncs(spec *openapi3.T) {
-	var conf HandlerConfig
+func generateHandlerFuncs(spec *openapi3.T, genConf GeneratorConfig) {
+	conf := HandlerConfig{
+		ModuleName:  genConf.ModuleName,
+		OpenAPIPath: fs.GetFileNameWithEnding(genConf.OpenAPIPath),
+		UseAuth:     genConf.UseAuth,
+		Flags:       genConf.Flags,
+	}
+	conf.ModuleName = genConf.ModuleName
+	conf.Flags = genConf.Flags
+
+	for _, item := range spec.Security {
+		for key := range item {
+			if key == genConf.ApiKeySecurityName {
+				conf.UseGlobalAuth = true
+				break
+			}
+		}
+	}
+
 	for path, pathObj := range spec.Paths {
 		var newPath PathConfig
 		newPath.Path = convertPathParams(path)
 
 		for method, op := range pathObj.Operations() {
-			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path)
+			opConfig, err := generateHandlerFuncStub(op, method, newPath.Path, genConf.ApiKeySecurityName)
 
 			if err != nil {
 				log.Err(err).Msg("Skipping generation of handler function for endpoint " + method + " " + path)
@@ -174,7 +243,7 @@ func generateHandlerFuncs(spec *openapi3.T) {
 
 func generateConfigFiles(serverConf ServerConfig) {
 	// create app.env file
-	fileName := "app.env"
+	fileName := ".env"
 	filePath := filepath.Join(config.Path, fileName)
 	templateFile := "templates/app.env.tmpl"
 
@@ -190,9 +259,7 @@ func generateConfigFiles(serverConf ServerConfig) {
 }
 
 func generateDatabaseFiles(conf GeneratorConfig) {
-	if conf.UseDatabase {
-		log.Info().Msg("Adding SQLite database.")
-	}
+	log.Info().Msg("Adding SQLite database.")
 
 	fileName := conf.DatabaseName
 	filePath := filepath.Join(config.Path, Pkg, DatabasePkg, fileName)
@@ -200,4 +267,86 @@ func generateDatabaseFiles(conf GeneratorConfig) {
 
 	fs.GenerateFile(filePath + ".db")
 	createFileFromTemplate(filePath+".go", templateFile, conf)
+}
+
+func generateAuthzFile(conf GeneratorConfig) {
+	log.Info().Msg("Adding auth middleware.")
+
+	fileName := "authz.go"
+	filePath := filepath.Join(config.Path, Pkg, AuthzPkg, fileName)
+	templateFile := "templates/authz.go.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateValidation(conf GeneratorConfig) {
+	log.Info().Msg("Adding validation middleware.")
+
+	fileName := "validation.go"
+	filePath := filepath.Join(config.Path, Pkg, MiddlewarePackage, fileName)
+	templateFile := "templates/validation.go.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateLifecycleFiles(spec *openapi3.T) {
+	if spec.Paths.Find("/livez") == nil {
+		log.Info().Msg("Generating default /livez endpoint.")
+
+		op := openapi3.NewOperation()
+		op.AddResponse(200, createOAPIResponse("The server is alive"))
+		updateOAPIOperation(op, "getHealth", "Returns health-state of the server", 200)
+		spec.AddOperation("/livez", "GET", op)
+	}
+	if spec.Paths.Find("/readyz") == nil {
+		log.Info().Msg("Generating default /readyz endpoint.")
+
+		op := openapi3.NewOperation()
+		op.AddResponse(200, createOAPIResponse("The Service is ready"))
+		op.AddResponse(500, createOAPIResponse("The Service is not ready"))
+		updateOAPIOperation(op, "getReady", "Returns ready-state of the server", 200)
+		spec.AddOperation("/readyz", "GET", op)
+	}
+}
+
+func generateMakefile(conf GeneratorConfig, serverConf ServerConfig) {
+	type makefileConfig struct {
+		ModuleName string
+		Port       int16
+	}
+
+	var makefileConf makefileConfig
+	makefileConf.ModuleName = conf.ModuleName
+	makefileConf.Port = serverConf.Port
+
+	log.Info().Msg("Adding Makefile.")
+
+	fileName := "Makefile"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/make-file.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, makefileConf)
+}
+
+func generateDockerfile(conf GeneratorConfig, serverConf ServerConfig) {
+	type dockerfileConfig struct {
+		ModuleName string
+		Port       int16
+	}
+
+	var dockerfileConf dockerfileConfig
+	dockerfileConf.ModuleName = conf.ModuleName
+	dockerfileConf.Port = serverConf.Port
+
+	log.Info().Msg("Adding Dockerfile.")
+
+	fileName := "Dockerfile"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/docker-file.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, dockerfileConf)
 }

@@ -1,8 +1,12 @@
-{{ if .ImportDefs -}}
+{{ define "imports" }}
+
+{{- if .ImportDefs -}}
   import (
   {{ range .ImportDefs -}}
-    {{- if .Name }} {{ .Name }} {{ end -}}
-    {{- if .URL }} {{ .URL }} {{ end }}
-  {{ end -}}
+    {{- if .Name -}} {{ .Name }} {{ end -}}
+    {{- if .URL -}} {{ .URL }} {{ end }}
+  {{- end }}
 )
+{{- end }}
+
 {{ end }}

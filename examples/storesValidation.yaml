@@ -22,24 +22,37 @@ components:
           format: uuid
     Store:
       type: object
+      required:
+        - id
+        - size
       properties:
         id:
           type: string
           format: uuid
         name:
+          minLength: 10
+          maxLength: 25
           type: string
         description:
           type: string
         address:
-          type: string
+          type: object
+          properties:
+            street: 
+              type: string
+            number:
+              type: integer
+              format: int32
         size:
           type: integer
           format: int32
+          maximum: 10000
         annual_revenue:
           type: number
           format: float
         inventory:
           type: array
+          minItems: 2
           items:
             $ref: '#/components/schemas/Item'
 paths:

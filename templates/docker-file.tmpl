@@ -1,0 +1,7 @@
+# Use busybox as the base image
+FROM busybox@sha256:dcdf379c574e1773d703f0c0d56d67594e7a91d6b84d11ff46799f60fb081c52
+# Copy over the executable file
+COPY ./{{ .ModuleName }} /home/
+EXPOSE {{ .Port }}
+# Run the executable file
+CMD /home/{{ .ModuleName }}

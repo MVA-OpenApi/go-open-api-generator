@@ -1,29 +1,30 @@
 package util 
 
 import (
-	"github.com/spf13/viper"
+	"os"
+	"strings"
+
+	"github.com/joho/godotenv"
     "github.com/rs/zerolog/log"
 )
 
 type Config struct {
-	ServerPort string `mapstructure:"SERVER_PORT"`
+	ServerPort string
+	ApiKeys []string
 }
 
-func LoadConfig(path string) (config Config, err error) {
-	viper.AddConfigPath(path)
-	viper.SetConfigName("app")
-	viper.SetConfigType("env")
+var AppConfig Config
 
-	viper.AutomaticEnv()
+func LoadConfig() {
+	if _, err := os.Stat(".env"); err == nil {
+		err := godotenv.Load()
 
-	err = viper.ReadInConfig() 
-	if err != nil {
-        log.Error().Err(err).Msg("Failed to read config file.")
-		return
+		if err != nil {
+			log.Error().Err(err).Msg("Error loading .env file")
+			panic(err)
+		}
 	}
 
-	err = viper.Unmarshal(&config)
-
-	return
-
+	AppConfig.ServerPort = os.Getenv("SERVER_PORT")
+	AppConfig.ApiKeys = strings.Split(os.Getenv("API_KEYS"), ",")
 }

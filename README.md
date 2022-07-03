@@ -9,12 +9,17 @@ We aim to make the life of Golang REST API developers easier by creating a tool 
 - A frontend interface which allows the developer to interact with the generated endpoints without using an external tool like Postman.
 - An option to add middleware logging into a file for the generated REST API.
 - An option to integrate boilerplate code for a small SQLite3 database.
+- An option to integrate HTTP2 support.
+- Supports API keys authorization (globally or per operation).
 # Contributions
 
 This project was made by 6 students of the TU Berlin as part of the module "Moderne Verteilte Anwendungen Programmierpraktikum" when studying B.Sc Computer Science.
 
 # Prerequisites
 Golang (You can find an installation guide for Golang <a href="https://go.dev/">here</a>).
+
+Prerequisite for HTTP/2 is a TLS connection, to generate a quick localhost certificate use either openssl or
+`go run $GOROOT/src/crypto/tls/generate_cert.go --host localhost`
 
 # Setup
 After cloning this repository, run the following command inside the repository folder to get all the required dependencies:
@@ -36,7 +41,7 @@ You can check how the file looks like <a href="https://github.com/MVA-OpenApi/go
 - `-n [Module name]`. Specifies the go module name.
 - `-l [Use logger]`. Enables logging middleware on the generated REST API.
 - `-d [Use database]`. Generates boilerplate code for a basic SQLite3 database.
-- `-h [CLI tool help]`. Prints out the usage of the CLI tool in the command line.
+- `-H [Use HTTP2]`. Enables HTTP2 support.
 
 # Makefile
 Available makefile commands:
