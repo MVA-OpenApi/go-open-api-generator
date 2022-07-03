@@ -1,0 +1,29 @@
+import React from "react";
+import Grid from "@mui/material/Grid";
+import { Routes, Route, Navigate } from "react-router-dom";
+
+import "./styles/index.css";
+
+import SideBar from "./components/SideBar";
+{{ if not .IsNotEmpty}}import DefaultPage from "./components/DefaultPage";{{end}}
+{{ with .List }}{{ range . }}import {{ .ComponentName }} from "./components/schemas/{{ .ComponentName }}";{{ end  }}{{ end }}
+
+function App() {
+  return (
+    <div className="App">
+      <Grid container spacing={2}>
+        <Grid item xs={12} md={2}>
+          <SideBar />
+        </Grid>
+        <Grid item xs={12} md={10} lg={8}>
+          <Routes>
+            {{ if .IsNotEmpty}}<Route path="/" element={<Navigate replace to="{{ (index .List 0).Name }}" />} />{{ else }}<Route path="/" element={<DefaultPage />} />{{end}}
+            {{ with .List }}{{range . }}<Route path="{{ .Name }}" element={<{{ .ComponentName }} />} />{{ end  }}{{ end }}
+          </Routes>
+        </Grid>
+      </Grid>
+    </div>
+  );
+}
+
+export default App;
