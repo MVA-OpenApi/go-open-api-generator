@@ -62,8 +62,6 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	generateConfigFiles(serverConf)
 
-	generateBdd("../tests/stores.feature")
-
 	generateFrontend(conf)
 
 	if conf.UseLifecycle {
@@ -256,8 +254,77 @@ func generateHandlerFuncs(spec *openapi3.T, genConf GeneratorConfig) {
 	createFileFromTemplate(filePath, templateFile, conf)
 }
 
-//---------GENERATION OF BDD---------
+func generateConfigFiles(serverConf ServerConfig) {
+	// create app.env file
+	fileName := ".env"
+	filePath := filepath.Join(config.Path, fileName)
+	templateFile := "templates/app.env.tmpl"
 
+	createFileFromTemplate(filePath, templateFile, serverConf)
+
+	// create config.go.tmpl file
+	fileName = "config.go"
+	filePath = filepath.Join(config.Path, Pkg, UtilPkg, fileName)
+	templateFile = "templates/config.go.tmpl"
+
+	createFileFromTemplate(filePath, templateFile, nil)
+
+}
+
+func generateDatabaseFiles(conf GeneratorConfig) {
+	log.Info().Msg("Adding SQLite database.")
+
+	fileName := conf.DatabaseName
+	filePath := filepath.Join(config.Path, Pkg, DatabasePkg, fileName)
+	templateFile := "templates/database.go.tmpl"
+
+	fs.GenerateFile(filePath + ".db")
+	createFileFromTemplate(filePath+".go", templateFile, conf)
+}
+
+func generateAuthzFile(conf GeneratorConfig) {
+	log.Info().Msg("Adding auth middleware.")
+
+	fileName := "authz.go"
+	filePath := filepath.Join(config.Path, Pkg, AuthzPkg, fileName)
+	templateFile := "templates/authz.go.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateValidation(conf GeneratorConfig) {
+	log.Info().Msg("Adding validation middleware.")
+
+	fileName := "validation.go"
+	filePath := filepath.Join(config.Path, Pkg, MiddlewarePackage, fileName)
+	templateFile := "templates/validation.go.tmpl"
+
+	fs.GenerateFile(filePath)
+	createFileFromTemplate(filePath, templateFile, conf)
+}
+
+func generateLifecycleFiles(spec *openapi3.T) {
+	if spec.Paths.Find("/livez") == nil {
+		log.Info().Msg("Generating default /livez endpoint.")
+
+		op := openapi3.NewOperation()
+		op.AddResponse(200, createOAPIResponse("The server is alive"))
+		updateOAPIOperation(op, "getHealth", "Returns health-state of the server", 200)
+		spec.AddOperation("/livez", "GET", op)
+	}
+	if spec.Paths.Find("/readyz") == nil {
+		log.Info().Msg("Generating default /readyz endpoint.")
+
+		op := openapi3.NewOperation()
+		op.AddResponse(200, createOAPIResponse("The Service is ready"))
+		op.AddResponse(500, createOAPIResponse("The Service is not ready"))
+		updateOAPIOperation(op, "getReady", "Returns ready-state of the server", 200)
+		spec.AddOperation("/readyz", "GET", op)
+	}
+}
+
+//----------------------------
 func ignore(input string) bool {
 	return input == "When" || input == "And" || input == "Given" || input == "Then"
 }
@@ -474,12 +541,18 @@ func getAllEndpoints(listing Listing) []string {
 	return slice
 }
 
-func generateBdd(path string) {
+//path is the path of the feature file
+func GenerateBdd(path string) {
 	var step Listing
 	step.Steps = parseSteps(path)
 	step.UniqueEndpoints = getAllEndpoints(step)
 
-	f, err := os.OpenFile("generation_godog_test.go", os.O_WRONLY, os.ModeAppend)
+	_, e := os.Create("server_godog_test.go")
+	if e != nil {
+		log.Fatal()
+	}
+
+	f, err := os.OpenFile("server_godog_test.go", os.O_WRONLY, os.ModeAppend)
 	if err != nil {
 		panic(err)
 	}
@@ -492,77 +565,7 @@ func generateBdd(path string) {
 	}
 }
 
-//---------END---------
-
-func generateConfigFiles(serverConf ServerConfig) {
-	// create app.env file
-	fileName := ".env"
-	filePath := filepath.Join(config.Path, fileName)
-	templateFile := "templates/app.env.tmpl"
-
-	createFileFromTemplate(filePath, templateFile, serverConf)
-
-	// create config.go.tmpl file
-	fileName = "config.go"
-	filePath = filepath.Join(config.Path, Pkg, UtilPkg, fileName)
-	templateFile = "templates/config.go.tmpl"
-
-	createFileFromTemplate(filePath, templateFile, nil)
-
-}
-
-func generateDatabaseFiles(conf GeneratorConfig) {
-	log.Info().Msg("Adding SQLite database.")
-
-	fileName := conf.DatabaseName
-	filePath := filepath.Join(config.Path, Pkg, DatabasePkg, fileName)
-	templateFile := "templates/database.go.tmpl"
-
-	fs.GenerateFile(filePath + ".db")
-	createFileFromTemplate(filePath+".go", templateFile, conf)
-}
-
-func generateAuthzFile(conf GeneratorConfig) {
-	log.Info().Msg("Adding auth middleware.")
-
-	fileName := "authz.go"
-	filePath := filepath.Join(config.Path, Pkg, AuthzPkg, fileName)
-	templateFile := "templates/authz.go.tmpl"
-
-	fs.GenerateFile(filePath)
-	createFileFromTemplate(filePath, templateFile, conf)
-}
-
-func generateValidation(conf GeneratorConfig) {
-	log.Info().Msg("Adding validation middleware.")
-
-	fileName := "validation.go"
-	filePath := filepath.Join(config.Path, Pkg, MiddlewarePackage, fileName)
-	templateFile := "templates/validation.go.tmpl"
-
-	fs.GenerateFile(filePath)
-	createFileFromTemplate(filePath, templateFile, conf)
-}
-
-func generateLifecycleFiles(spec *openapi3.T) {
-	if spec.Paths.Find("/livez") == nil {
-		log.Info().Msg("Generating default /livez endpoint.")
-
-		op := openapi3.NewOperation()
-		op.AddResponse(200, createOAPIResponse("The server is alive"))
-		updateOAPIOperation(op, "getHealth", "Returns health-state of the server", 200)
-		spec.AddOperation("/livez", "GET", op)
-	}
-	if spec.Paths.Find("/readyz") == nil {
-		log.Info().Msg("Generating default /readyz endpoint.")
-
-		op := openapi3.NewOperation()
-		op.AddResponse(200, createOAPIResponse("The Service is ready"))
-		op.AddResponse(500, createOAPIResponse("The Service is not ready"))
-		updateOAPIOperation(op, "getReady", "Returns ready-state of the server", 200)
-		spec.AddOperation("/readyz", "GET", op)
-	}
-}
+//----------------------------
 
 func generateMakefile(conf GeneratorConfig, serverConf ServerConfig) {
 	type makefileConfig struct {
