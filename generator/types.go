@@ -60,3 +60,33 @@ type HandlerConfig struct {
 	ModuleName    string
 	Flags
 }
+
+// struct for all schemas that have to be in the frontend
+type Schemas struct {
+	List       []SchemaConf
+	IsNotEmpty bool
+}
+
+// struct for the specific schema in Schemas
+type SchemaConf struct {
+	Name          string // all in lower case and without spaces
+	H1Name        string // correct grammar, spaces allowed
+	ComponentName string // first letter upper case, no spaces
+	Properties    []PropertyConf
+	Methods       []MethodConf
+}
+
+// struct for each property of a schema
+type PropertyConf struct {
+	Name      string
+	LabelName string
+	Type      string
+}
+
+// struct for each method a schema has
+type MethodConf struct {
+	Type               string
+	Endpoint           string
+	PathParams         map[string]string
+	BodySchemaRequired bool
+}

@@ -1,0 +1,70 @@
+import React, { useState } from "react";
+
+import IDForm from "../IDForm";
+import LoadSubmit from "../LoadSubmit";
+import {{ .ComponentName }}Form from "./schemaforms/{{ .ComponentName }}Form";
+
+import { getItem, postItem, putItem, deleteItem } from "../../api";
+
+import "../../styles/schemaform.css";
+
+const PATH = "/{{ .Name }}";
+
+function {{ .ComponentName }}() {
+  const [method, setMethod] = useState("get-all");
+  const [responseData, setResponseData] = useState("");
+
+  return (
+    <div>
+      <h1>{{ .H1Name }}</h1>
+      <LoadSubmit
+        setMethod={setMethod}
+        path={PATH}
+        setResponseData={setResponseData}
+      />
+      {showMethodView(method, setResponseData)}
+      {responseData}
+    </div>
+  );
+}
+
+var showMethodView = (method, setResponseData) => {
+  switch (method) {
+    case "get":
+      return (
+        <IDForm
+          path={PATH}
+          onClickFunc={getItem}
+          setResponseData={setResponseData}
+        />
+      );
+    case "post":
+      return (
+        <{{ .ComponentName }}Form
+          path={PATH}
+          onClickFunc={postItem}
+          setResponseData={setResponseData}
+        />
+      );
+    case "put":
+      return (
+        <{{ .ComponentName }}Form
+          path={PATH}
+          onClickFunc={putItem}
+          setResponseData={setResponseData}
+        />
+      );
+    case "delete":
+      return (
+        <IDForm
+          path={PATH}
+          onClickFunc={deleteItem}
+          setResponseData={setResponseData}
+        />
+      );
+    default:
+      break;
+  }
+};
+
+export default {{ .ComponentName }};
