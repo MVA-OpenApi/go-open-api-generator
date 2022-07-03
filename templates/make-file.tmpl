@@ -1,0 +1,7 @@
+docker-build:
+	env GOOS=linux GOARCH=amd64 go build && \
+	docker build -t {{ .ModuleName }} . && \
+	rm -rf {{ .ModuleName }}
+
+docker-run:
+	docker run --rm -p {{ .Port }}:{{ .Port }} --env-file=.env {{ .ModuleName }}
