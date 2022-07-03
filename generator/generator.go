@@ -32,10 +32,10 @@ const (
 	AuthzPkg                 = "authz"
 	MiddlewarePackage        = "middleware"
 	DefaultPort              = 8080
-	PUT               string = "\"PUT\""
-	GET                      = "\"GET\""
-	POST                     = "\"POST\""
-	DELETE                   = "\"DELETE\""
+	PUT               string = "PUT"
+	GET                      = "GET"
+	POST                     = "POST"
+	DELETE                   = "DELETE"
 )
 
 var (
