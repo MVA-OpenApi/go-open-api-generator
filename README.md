@@ -59,6 +59,7 @@ The input feature file has to have the following structure in order for the gene
 - ```Scenario: Test GET Request for url "/store"
     When I send GET request to "/store" with payload ""
     Then The response for url "/store" with request method "GET" should be 404
+- After you have created a feature file that follows this structure, you can generate the godog file by running `go run main.go generate-bdd <path to the file>`
 
 
 # Examples
