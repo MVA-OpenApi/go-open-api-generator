@@ -3,6 +3,7 @@ info:
   title: Example API - Stores
   description: This is the example OpenAPI Specification file we will use as input for the MVP.
   version: 1.0.0
+
 servers:
   - url: http://localhost:{port}
     description: Localhost
