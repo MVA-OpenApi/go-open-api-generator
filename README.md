@@ -2,15 +2,19 @@
 A Command-Line Interface generator for REST APIs using Go's <a href="https://echo.labstack.com/">Echo</a> from a given <a href="https://www.openapis.org/">OpenAPI 3</a> Specification file in either JSON or YAML format.
 
 # Purpose
-We aim to make the life of Golang REST API developers easier by creating a tool which takes an OpenAPI 3 Specification file as input and generates a basic project structure from it so the developers can focus on the business logic. Our currently supported features are:
+We aim to make the life of Golang REST API developers (or non technical users) easier by creating a tool which takes an OpenAPI 3 Specification file as input and generates a basic project structure from it so the developers can focus on the business logic. Our currently supported features are:
 - Stub handlers for each endpoint and request specified in the input file.
 - Go structs for each schema present in the input file.
+- Validation of parameters from the OpenAPI rules.
 - Config file for environment variables.
 - A frontend interface which allows the developer to interact with the generated endpoints without using an external tool like Postman.
+- Generation of a simple web client written in react.js to test CRUD operations for the component schemas.
 - An option to add middleware logging into a file for the generated REST API.
 - An option to integrate boilerplate code for a small SQLite3 database.
 - An option to integrate HTTP2 support.
 - Supports API keys authorization (globally or per operation).
+- Dockerfile and Lifecycle functions generation.
+- Generation of BDD Testing from a `.feature` file.
 # Contributions
 
 This project was made by 6 students of the TU Berlin as part of the module "Moderne Verteilte Anwendungen Programmierpraktikum" when studying B.Sc Computer Science.
@@ -18,8 +22,10 @@ This project was made by 6 students of the TU Berlin as part of the module "Mode
 # Prerequisites
 Golang (You can find an installation guide for Golang <a href="https://go.dev/">here</a>).
 
+Godog (Only for BDD testing. You can find an installation guide here [godog](https://github.com/cucumber/godog)).
+
 Prerequisite for HTTP/2 is a TLS connection, to generate a quick localhost certificate use either openssl or
-`go run $GOROOT/src/crypto/tls/generate_cert.go --host localhost`
+`go run $GOROOT/src/crypto/tls/generate_cert.go --host localhost`.
 
 # Setup
 After cloning this repository, run the following command inside the repository folder to get all the required dependencies:
@@ -42,19 +48,21 @@ You can check how the file looks like <a href="https://github.com/MVA-OpenApi/go
 - `-l [Use logger]`. Enables logging middleware on the generated REST API.
 - `-d [Use database]`. Generates boilerplate code for a basic SQLite3 database.
 - `-H [Use HTTP2]`. Enables HTTP2 support.
+- `-L [Use Lifecycle endpoints]`. Generates Livez and Readyz endpoints.
 
 # Makefile
 Available makefile commands:
 - `make generate OPEN_API_PATH=path/to/open-api-file`. This command will generate the minimum project structure (no optional flags are set). The parameter `OPEN_API_PATH` is required.
 - `make generate-all-flags OPEN_API_PATH=path/to/open-api-file MODULE_NAME=module-name`. This command will generate the maximum project structure (all optional flags are set). The parameter `OPEN_API_PATH` is required.
 - `make build OUTPUT_NAME=executable-name`. This command will build an executable which can be used by the developer outside of the project repository.
-- `make test`. ~~This command runs the unit tests for the generator.~~ (WIP)
+- `make test`. This command runs the unit tests for the generator.
 
 # BDD Generation
 The input feature file has to have the following structure in order for the generator to create the godog test file
-- `Scenario: Test GET Request for url <"regex of the url">
+- ```Scenario: Test GET Request for url <"regex of the url">
     When I send GET request to <"actual endpoint"> with payload <"payload that needs to be sent">
-    Then The response for url <"endpoint again"> with request method <"request method"> should be <status code. this is the only part that shouldn't be in quotes>`
+    Then The response for url <"endpoint again"> with request method <"request method"> should be <status code>
+  ```
 - So an example for a scenario would be
 - ```
     Scenario: Test GET Request for url "/store/{id}"
