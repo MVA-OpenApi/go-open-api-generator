@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"fileUtils"
+	"go-open-api-generator/fileUtils"
 	_ "go-open-api-generator/tests"
 	"log"
 	"os"

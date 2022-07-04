@@ -1,7 +1,7 @@
 package tests
 
 import (
-	"parser"
+	"go-open-api-generator/parser"
 	"testing"
 )
 
