@@ -462,7 +462,7 @@ func parseSteps(path string) []Step {
 							}
 							//in the case where the name is not there and also the list is not empty we use the flag to check
 							//and we just append the step to the list
-							if flag == false {
+							if !flag {
 								listOfSteps = append(listOfSteps, prevStepConf)
 							}
 						}
