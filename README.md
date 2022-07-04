@@ -58,7 +58,7 @@ The input feature file has to have the following structure in order for the gene
 - So an example for a scenario would be
 - ```Scenario: Test GET Request for url "/store"
     When I send GET request to "/store" with payload ""
-    Then The response for url "/store" with request method "GET" should be 404```
+    Then The response for url "/store" with request method "GET" should be 404
 
 
 # Examples
