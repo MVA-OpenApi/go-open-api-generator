@@ -28,6 +28,15 @@ var rootCmd = &cobra.Command{
 	Long:  "Generate Go-Server code and RapidDoc-Clientcode for your application by providing an OpenAPI Specification",
 }
 
+var generateBdd = &cobra.Command{
+	Use:   "generate-bdd <path to feature file>",
+	Short: "Create BDD test file from the feature file",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		gen.GenerateBdd(args[0])
+	},
+}
+
 var generateCmd = &cobra.Command{
 	Use:     "generate <path to OpenAPI Specification>",
 	Short:   "Create server and client API code from OpenApi Spec",
@@ -102,4 +111,7 @@ func init() {
 
 	// add generate command
 	rootCmd.AddCommand(generateCmd)
+
+	//add bdd command
+	rootCmd.AddCommand(generateBdd)
 }

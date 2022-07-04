@@ -1,0 +1,70 @@
+package main
+
+import (
+	"fmt"
+	"github.com/cucumber/godog"
+	"net/http"
+	"regexp"
+	"strings"
+)
+/*
+*Before you execute the BDD tests you must first have a running server at localhost:8080
+*in order for the BDD tests to connect to and test
+*/
+{{ range .Steps}}
+func {{ .Name }} (endpoint, payload string) error{
+  	url := "http://localhost:8080/" + endpoint
+	data := strings.NewReader(payload)
+
+	client := &http.Client{}
+	req, err := http.NewRequest(http.Method{{ .Method }}, url, data)
+	if err != nil {
+		panic(err)
+	}
+
+	req.Header.Set("Content-Type", "application/json; charset=utf-8")
+	resp, err := client.Do(req)
+	if err != nil {
+		panic(err)
+	}
+	{{ range $i, $e := .RegexAndCode}}
+	if ok, _ := regexp.MatchString({{$i}}, endpoint); ok && resp.StatusCode != {{$e}} {
+		return fmt.Errorf("expected {{$e}} received %d", resp.StatusCode)
+	}
+	{{end}}
+	return nil
+}
+{{ end }}
+func theResponseForUrlWithRequestMethodShouldBe(method, url string, statusCode int) error {
+    {{- range .Steps -}}
+    {{- $paths := .PathsWithHost}}
+    {{- $m := .Method}}
+    {{- if eq $m "Get"}}
+    {{$m = "GET"}}
+    {{- end }}
+    {{- if eq $m "Set"}}
+    {{$m = "SET"}}
+    {{- end }}
+    {{- if eq $m "Put"}}
+    {{$m = "PUT"}}
+    {{- end }}
+    {{- if eq $m "Delete"}}
+    {{$m = "DELETE"}}
+    {{- end }}
+    {{$s := .StatusCode}}
+        {{- range $i, $j := $paths -}}
+        if ok, _ := regexp.MatchString(url, "{{$j}}"); ok && method == "{{$m}}"{
+            if statusCode != {{$s}}{
+                return fmt.Errorf("Expected {{$s}} but received other")
+            }
+        }
+        {{- end -}}
+    {{ end }}
+    return nil
+}
+func InitializeScenario(ctx *godog.ScenarioContext){
+    {{- range .Steps }}
+    ctx.Step(`{{ .RealName }}$`, {{ .Name }})
+    {{- end }}
+    ctx.Step(`^The response for url "([^"]*)" with request method "([^"]*)" should be (\d+)$`, theResponseForUrlWithRequestMethodShouldBe)
+}
