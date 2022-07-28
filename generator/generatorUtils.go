@@ -2,6 +2,7 @@ package generator
 
 import (
 	"os"
+	"os/exec"
 	"path"
 	"regexp"
 	"strings"
@@ -88,4 +89,38 @@ func createOAPIResponse(rDesc string) *openapi3.Response {
 	r := openapi3.NewResponse()
 	r.Description = &rDesc
 	return r
+}
+
+func NPMInstall(path string) {
+	if path == "" {
+		log.Fatal().Msg("No path given to run npm install")
+		return
+	}
+
+	cmd := exec.Command("npm", "install")
+	cmd.Dir = path
+	log.Info().Msg("Run npm install...")
+	err := cmd.Run()
+
+	if err != nil {
+		log.Error().Err(err).Msg("Could not run npm install.")
+		panic(err)
+	}
+}
+
+func NPMBuild(path string) {
+	if path == "" {
+		log.Fatal().Msg("No path given to run npm build")
+		return
+	}
+
+	cmd := exec.Command("npm", "run-script", "build")
+	cmd.Dir = path
+	log.Info().Msg("Run npm run-script build...")
+	err := cmd.Run()
+
+	if err != nil {
+		log.Error().Err(err).Msg("Could not run npm build.")
+		panic(err)
+	}
 }

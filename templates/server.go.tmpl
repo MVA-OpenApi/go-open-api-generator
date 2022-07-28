@@ -48,9 +48,14 @@ func main() {
 		e.Use(middleware.Logger())
 	{{ end }}	
 	
+	// serve doc
+	e.FileFS("/doc", "public/doc/index.html", embeddedFS)
+	e.FileFS("/{{.OpenAPIName}}.yaml", "public/doc/{{.OpenAPIName}}.yaml", embeddedFS)
+
 	// serve frontend
-	e.FileFS("/doc", "public/index.html", embeddedFS)
-	e.FileFS("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml", embeddedFS)
+	e.FileFS("/frontend", "public/build/index.html", embeddedFS)
+	{{ range .StaticFiles}}e.FileFS("{{.}}", "public/build{{.}}", embeddedFS)
+	{{end}}
 
 	{{- if .UseHTTP2}}
 	e.Logger.Fatal(e.StartTLS(":" + util.AppConfig.ServerPort, "cert.pem", "key.pem"))

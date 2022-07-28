@@ -16,8 +16,6 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	// create Schemas struct and add SchemaConfs (with name and properties) for schemas with x-label: form
 	schemas := createSchemas(spec)
 
-	//schemasWithMethods := addMethods(schemas)
-
 	// create folders
 	frontendPath := filepath.Join(conf.OutputPath, "frontend")
 	frontendPublicPath := filepath.Join(frontendPath, "public")
@@ -77,65 +75,24 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	}
 
 	log.Info().Msg("Created Frontend successfully.")
+
+	// npm build and moving the output folder +  delete frontend folder
+	publishFrontend(frontendPath, filepath.Join(conf.OutputPath, "public"))
 }
 
-// for each schema in schemas.List add CRUD Methods with RESTful best practice API endpoints
-/* func addMethods(schemas Schemas) (schemasWithMethods Schemas) {
-	schemasWithMethods = schemas
+func publishFrontend(sourcePath string, destinationPath string) {
+	// run npm install
+	NPMInstall(sourcePath)
 
-	for i := range schemasWithMethods.List {
-		tmpSchema := schemasWithMethods.List[i]
-		tmpSchemaMethods := make([]MethodConf, 0)
-		schemaURL := strings.ReplaceAll(strings.ToLower(tmpSchema.Name), " ", "")
+	// run npm build
+	NPMBuild(sourcePath)
 
-		// add GET with path /<schema name>
-		var getConf MethodConf
-		getConf.Type = "get"
-		getConf.Endpoint = schemaURL
-		getConf.BodySchemaRequired = false
-		tmpSchemaMethods = append(tmpSchemaMethods, getConf)
+	// move build folder to destinationPath
+	fs.MoveDir(filepath.Join(sourcePath, "build"), filepath.Join(destinationPath, "build"))
 
-		// add GET with path /<schema name>/:id
-		var getSpecificConf MethodConf
-		getSpecificConf.Type = "get"
-		getSpecificConf.Endpoint = schemaURL
-		getSpecificConf.PathParams = make(map[string]string)
-		getSpecificConf.PathParams["id"] = tmpSchema.Properties["id"]
-		getSpecificConf.BodySchemaRequired = false
-		tmpSchemaMethods = append(tmpSchemaMethods, getSpecificConf)
-
-		// add POST with path /<schema name>
-		var postConf MethodConf
-		postConf.Type = "post"
-		postConf.Endpoint = schemaURL
-		postConf.BodySchemaRequired = true
-		tmpSchemaMethods = append(tmpSchemaMethods, postConf)
-
-		// add PUT with path /<schema name>/:id
-		var putConf MethodConf
-		putConf.Type = "put"
-		putConf.Endpoint = schemaURL
-		putConf.PathParams = make(map[string]string)
-		putConf.PathParams["id"] = tmpSchema.Properties["id"]
-		putConf.BodySchemaRequired = true
-		tmpSchemaMethods = append(tmpSchemaMethods, putConf)
-
-		// add DELETE with path /<schema name>/:id
-		var deleteConf MethodConf
-		deleteConf.Type = "delete"
-		deleteConf.Endpoint = schemaURL
-		deleteConf.PathParams = make(map[string]string)
-		deleteConf.PathParams["id"] = tmpSchema.Properties["id"]
-		deleteConf.BodySchemaRequired = false
-		tmpSchemaMethods = append(tmpSchemaMethods, deleteConf)
-
-		schemasWithMethods.List[i].Methods = tmpSchemaMethods
-
-	}
-
-	return schemasWithMethods
-
-} */
+	// delete frontend folder at source path
+	fs.DeleteFolderRecursively(sourcePath)
+}
 
 func createSchemas(spec *openapi3.T) (schemas Schemas) {
 	schemas.List = make([]SchemaConf, 0)
@@ -161,7 +118,6 @@ func createSchemas(spec *openapi3.T) (schemas Schemas) {
 			tmpSchemaPropertyNames := reflect.ValueOf(spec.Components.Schemas[tmpSchemaName].Value.Properties).MapKeys()
 			for j := range tmpSchemaPropertyNames {
 				tmpSchemaPropertyName := tmpSchemaPropertyNames[j].Interface().(string)
-				//schema.Properties[strings.Title(tmpSchemaPropertyName)] = spec.Components.Schemas[tmpSchemaName].Value.Properties[tmpSchemaPropertyName].Value.Type
 				var tmpPropertyConf PropertyConf
 				tmpPropertyConf.Name = tmpSchemaPropertyName
 				tmpPropertyConf.LabelName = strings.Title(tmpSchemaPropertyName)
@@ -194,7 +150,7 @@ func generateOpenAPIDoc(conf GeneratorConfig) {
 		GeneratorConfig
 		OpenAPIFile string
 	}
-	path := filepath.Join(conf.OutputPath, "public")
+	path := filepath.Join(conf.OutputPath, "public", "doc")
 	fs.GenerateFolder(path)
 
 	template := templateConfig{

@@ -6,6 +6,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	cp "github.com/otiai10/copy"
 	"github.com/rs/zerolog/log"
 )
 
@@ -77,5 +78,27 @@ func GetFileNameWithEnding(path string) string {
 	}
 
 	return filepath.Base(path)
+}
 
+func CopyDir(sourcePath string, destPath string) {
+	if sourcePath == "" || destPath == "" {
+		log.Error().Msg("No paths given to copy the folder.")
+	}
+
+	err := cp.Copy(sourcePath, destPath)
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to copy frontend build folder.")
+	}
+}
+
+func MoveDir(sourcePath string, destPath string) {
+	if sourcePath == "" || destPath == "" {
+		log.Error().Msg("No paths given to move the folder.")
+		return
+	}
+
+	CopyDir(sourcePath, destPath)
+
+	// delete folder at sourcePath
+	DeleteFolderRecursively(sourcePath)
 }
