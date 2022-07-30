@@ -1,25 +1,60 @@
 package main
 
 import (
+	{{- if .UseDatabase}}
+		"{{.ModuleName}}/pkg/db"
+	{{- end}}
 	"{{.ModuleName}}/pkg/handler"
+	"{{.ModuleName}}/pkg/util"
+	"embed"
+
+	{{- if .UseDatabase}}
+		"os"
+	{{- end}}
 
 	"github.com/labstack/echo/v4"
-	{{- if .UseLogger}}
-		"github.com/labstack/echo/v4/middleware"
+	"github.com/labstack/echo/v4/middleware"
+  
+	{{- if .UseDatabase}}
+		"github.com/rs/zerolog"
+		"github.com/rs/zerolog/log"
 	{{- end}}
+
 )
 
+//go:embed public
+var embeddedFS embed.FS
+
 func main() {
+	// load config
+	util.LoadConfig()
+
+	// start echo server
 	e := echo.New()
+	e.Use(middleware.CORS())
+
+	{{- if .UseDatabase}}
+		// Set up zerolog time format
+		zerolog.TimeFieldFormat = zerolog.TimeFormatUnix
+		// Set pretty logging on
+		log.Logger = log.Output(zerolog.ConsoleWriter{Out: os.Stderr})
+
+		db.InitDB()
+		defer db.CloseDB()
+	{{- end}}
 
 	handler.NewHandler(e)
-	{{if .UseLogger}}
+	{{- if .UseLogger }}
 		e.Use(middleware.Logger())
-	{{end}}
+	{{ end }}	
 	
 	// serve frontend
-	e.File("/", "../public/index.html")
-	e.File("/{{.ModuleName}}.yaml", "../public/{{.ModuleName}}.yaml")
+	e.FileFS("/doc", "public/index.html", embeddedFS)
+	e.FileFS("/{{.OpenAPIName}}.yaml", "public/{{.OpenAPIName}}.yaml", embeddedFS)
 
-	e.Logger.Fatal(e.Start(":{{.Port}}"))
+	{{- if .UseHTTP2}}
+	e.Logger.Fatal(e.StartTLS(":" + util.AppConfig.ServerPort, "cert.pem", "key.pem"))
+	{{else}}
+	e.Logger.Fatal(e.Start(":" + util.AppConfig.ServerPort))
+	{{end}}
 }

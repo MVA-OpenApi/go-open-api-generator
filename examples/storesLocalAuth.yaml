@@ -3,7 +3,6 @@ info:
   title: Example API - Stores
   description: This is the example OpenAPI Specification file we will use as input for the MVP.
   version: 1.0.0
-
 servers:
   - url: http://localhost:{port}
     description: Localhost
@@ -12,6 +11,11 @@ servers:
         default: "8000"
 
 components:
+  securitySchemes:
+    ApiKeyAuth: # arbitrary name for the security scheme
+      type: apiKey
+      in: header # can be "header", "query" or "cookie"
+      name: X-API-KEY # name of the header, query parameter or cookie
   schemas:
     Store:
       type: object
@@ -35,6 +39,8 @@ components:
 paths:
   /store:
     get:
+      security:
+        - ApiKeyAuth: []
       summary: Returns a list of all the stores.
       operationId: getAllStores
       responses:
@@ -67,6 +73,8 @@ paths:
           description: Invalid store properties.
   /store/{id}:
     get:
+      security:
+        - ApiKeyAuth: []
       summary: Returns a store with the given store id.
       operationId: getStoreByID
       parameters:

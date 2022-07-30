@@ -1,0 +1,30 @@
+package util 
+
+import (
+	"os"
+	"strings"
+
+	"github.com/joho/godotenv"
+    "github.com/rs/zerolog/log"
+)
+
+type Config struct {
+	ServerPort string
+	ApiKeys []string
+}
+
+var AppConfig Config
+
+func LoadConfig() {
+	if _, err := os.Stat(".env"); err == nil {
+		err := godotenv.Load()
+
+		if err != nil {
+			log.Error().Err(err).Msg("Error loading .env file")
+			panic(err)
+		}
+	}
+
+	AppConfig.ServerPort = os.Getenv("SERVER_PORT")
+	AppConfig.ApiKeys = strings.Split(os.Getenv("API_KEYS"), ",")
+}

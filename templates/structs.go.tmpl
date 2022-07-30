@@ -1,0 +1,13 @@
+{{ define "structs" }}
+
+{{- range . }}
+  {{ .Name }}
+  {{- if .NestedTypes }} {{ .Type }} {
+    {{ template "structs" .NestedTypes}}
+  }
+  
+  {{- else }} {{ .Type }} `json:"{{ .MarshalName }},omitempty"`
+  {{- end -}}
+{{ end }}
+
+{{- end }}

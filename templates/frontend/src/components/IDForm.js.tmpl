@@ -1,0 +1,33 @@
+import React, { useState } from "react";
+import TextField from "@mui/material/TextField";
+import { Button } from "@mui/material";
+
+import "../styles/schemaform.css";
+
+function IDForm(props) {
+  const [id, setId] = useState("");
+  return (
+    <form className="schema-form">
+      <TextField
+        label="id"
+        variant="outlined"
+        value={id}
+        onChange={e => setId(e.target.value)}
+      />
+      <Button variant="contained" onClick={() => handleOnClick(props, id)}>
+        Submit
+      </Button>
+    </form>
+  );
+}
+
+var handleOnClick = async (props, id) => {
+  if (id === "") {
+    console.log("No id given.");
+    return;
+  }
+  let responseData = await props.onClickFunc(props.path, id);
+  props.setReponseData(responseData);
+};
+
+export default IDForm;

@@ -3,7 +3,6 @@ info:
   title: Example API - Stores
   description: This is the example OpenAPI Specification file we will use as input for the MVP.
   version: 1.0.0
-
 servers:
   - url: http://localhost:{port}
     description: Localhost
@@ -12,6 +11,14 @@ servers:
         default: "8000"
 
 components:
+  securitySchemes:
+    basicAuth:
+      type: http
+      scheme: basic
+    ApiKeyAuth: # arbitrary name for the security scheme
+      type: apiKey
+      in: header # can be "header", "query" or "cookie"
+      name: X-API-KEY # name of the header, query parameter or cookie
   schemas:
     Store:
       type: object
@@ -31,6 +38,10 @@ components:
         annual_revenue:
           type: number
           format: float
+
+security:
+  - ApiKeyAuth: []
+  - basicAuth: []
 
 paths:
   /store:

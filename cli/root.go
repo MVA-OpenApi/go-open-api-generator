@@ -12,22 +12,35 @@ import (
 
 // variables for the flags
 var (
-	projectPath string
-	projectName string
-	loggerFlag  bool
+	projectPath    string
+	projectName    string
+	loggerFlag     bool
+	databaseFlag   bool
+	http2Flag      bool
+	lifecycleFlag  bool
+	validationFlag bool
 )
 
 // rootCmd represents the base command when called without any subcommands
 var rootCmd = &cobra.Command{
 	Use:   "go-open-api-generator",
 	Short: "Create server and client API code from OpenApi Spec",
-	Long:  "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
+	Long:  "Generate Go-Server code and RapidDoc-Clientcode for your application by providing an OpenAPI Specification",
+}
+
+var generateBdd = &cobra.Command{
+	Use:   "generate-bdd <path to feature file>",
+	Short: "Create BDD test file from the feature file",
+	Args:  cobra.ExactArgs(1),
+	Run: func(cmd *cobra.Command, args []string) {
+		gen.GenerateBdd(args[0])
+	},
 }
 
 var generateCmd = &cobra.Command{
 	Use:     "generate <path to OpenAPI Specification>",
 	Short:   "Create server and client API code from OpenApi Spec",
-	Long:    "Generate Go-Server code and ReactJS-Clientcode for your application by providing an OpenAPI Specification",
+	Long:    "Generate Go-Server code and RapidDoc-Clientcode for your application by providing an OpenAPI Specification",
 	Example: "generate ./stores.yaml -o ./outputPath -n StoresAPI",
 	Args:    cobra.ExactArgs(1),
 	Run: func(cmd *cobra.Command, args []string) {
@@ -44,14 +57,31 @@ var generateCmd = &cobra.Command{
 		}
 
 		projectDestination := filepath.Join(projectPath, projectName)
-		config := gen.GeneratorConfig{OpenAPIPath: openAPIPath, OutputPath: projectDestination, ModuleName: projectName, UseLogger: loggerFlag}
+		config := gen.GeneratorConfig{
+			OpenAPIPath:  openAPIPath,
+			OutputPath:   projectDestination,
+			ModuleName:   projectName,
+			DatabaseName: "database",
+			Flags: gen.Flags{
+				UseDatabase:   databaseFlag,
+				UseLogger:     loggerFlag,
+				UseHTTP2:      http2Flag,
+				UseLifecycle:  lifecycleFlag,
+				UseValidation: validationFlag,
+			},
+		}
 
 		log.Info().Msg("Generating project...")
-		gen.GenerateServer(config)
+		err := gen.GenerateServer(config)
+
+		if err != nil {
+			log.Error().Msg("Aborting...")
+			return
+		}
 
 		log.Info().Msg("Running external commands...")
 		log.Info().Msg("RUN `go mod init " + projectName + "`")
-		extCmd.RunCommand("go mod init "+ projectName, projectDestination)
+		extCmd.RunCommand("go mod init "+projectName, projectDestination)
 		log.Info().Msg("RUN `go mod tidy`")
 		extCmd.RunCommand("go mod tidy", projectDestination)
 		log.Info().Msg("RUN `go fmt ./...`")
@@ -74,7 +104,14 @@ func init() {
 	generateCmd.Flags().StringVarP(&projectPath, "output", "o", "", "path where generated code gets stored (default is the home directory)")
 	generateCmd.Flags().StringVarP(&projectName, "name", "n", "", "module name of generated code (default is 'build')")
 	generateCmd.Flags().BoolVarP(&loggerFlag, "logger", "l", false, "use logging middleware in generated code (default is 'false')")
+	generateCmd.Flags().BoolVarP(&databaseFlag, "database", "d", false, "add sqlite3 database in generated code (default is 'false')")
+	generateCmd.Flags().BoolVarP(&http2Flag, "http2", "H", false, "use HTTP/2 in generated code (default is 'false')")
+	generateCmd.Flags().BoolVarP(&validationFlag, "validation", "V", false, "use validation middleware (default is 'false')")
+	generateCmd.Flags().BoolVarP(&lifecycleFlag, "lifecycle", "L", false, "generate default livez and readyz endpoints (default is 'false')")
 
 	// add generate command
 	rootCmd.AddCommand(generateCmd)
+
+	//add bdd command
+	rootCmd.AddCommand(generateBdd)
 }

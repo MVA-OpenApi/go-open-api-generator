@@ -4,6 +4,7 @@ import (
 	"io/ioutil"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/rs/zerolog/log"
 )
@@ -43,19 +44,38 @@ func CheckIfFileExists(path string) bool {
 
 func CopyFile(sourcePath string, destinationPath string, fileName string) {
 	// check if file at sourcePath exists
-	if !CheckIfFileExists(sourcePath)  {
+	if !CheckIfFileExists(sourcePath) {
 		log.Error().Msg("Failed to copy file from " + sourcePath + " to " + destinationPath + "because file doesn't exists.")
 	}
 
 	//Read all the contents of the  original file
-    bytesRead, err := ioutil.ReadFile(sourcePath)
-    if err != nil {
-        log.Error().Err(err).Msg("")
-    }
+	bytesRead, err := ioutil.ReadFile(sourcePath)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
 
-    //Copy all the contents to the desitination file
-    err = ioutil.WriteFile(filepath.Join(destinationPath, fileName), bytesRead, 0755)
-    if err != nil {
-        log.Error().Err(err).Msg("")
-    }
+	//Copy all the contents to the desitination file
+	err = ioutil.WriteFile(filepath.Join(destinationPath, fileName), bytesRead, 0755)
+	if err != nil {
+		log.Error().Err(err).Msg("")
+	}
+}
+
+func GetFileName(path string) string {
+	if !CheckIfFileExists(path) {
+		log.Error().Msg("No valid filepath given.")
+		return ""
+	}
+
+	return strings.Split(filepath.Base(path), ".")[0]
+}
+
+func GetFileNameWithEnding(path string) string {
+	if !CheckIfFileExists(path) {
+		log.Error().Msg("No valid filepath given.")
+		return ""
+	}
+
+	return filepath.Base(path)
+
 }
