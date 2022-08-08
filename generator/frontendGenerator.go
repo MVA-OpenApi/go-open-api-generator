@@ -4,6 +4,7 @@ import (
 	fs "go-open-api-generator/fileUtils"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -12,6 +13,18 @@ import (
 
 func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	generateOpenAPIDoc(conf)
+
+	// struct for the Axios config
+	type AxiosConfig struct {
+		BaseURL string
+		Port    int16
+	}
+
+	// initialize Axios Config
+	var AC AxiosConfig
+	AC.BaseURL = "http://localhost"
+	// get port
+	AC.Port = getServerPort(spec)
 
 	// create Schemas struct and add SchemaConfs (with name and properties) for schemas with x-label: form
 	schemas := createSchemas(spec)
@@ -46,7 +59,7 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	createFileFromTemplate(filepath.Join(frontendStylesPath, "defaultpage.css"), "templates/frontend/src/styles/defaultpage.css.tmpl", nil)
 
 	// files in src directory
-	createFileFromTemplate(filepath.Join(frontendSrcPath, "api.js"), "templates/frontend/src/api.js.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendSrcPath, "api.js"), "templates/frontend/src/api.js.tmpl", AC)
 	createFileFromTemplate(filepath.Join(frontendSrcPath, "index.js"), "templates/frontend/src/index.js.tmpl", nil)
 
 	// files in components directory
@@ -78,6 +91,33 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 
 	// npm build and moving the output folder +  delete frontend folder
 	publishFrontend(frontendPath, filepath.Join(conf.OutputPath, "public"))
+}
+
+// function to get the port specified in the OpenAPI Spec
+func getServerPort(spec *openapi3.T) (port int16) {
+	if spec.Servers != nil {
+		serverSpec := spec.Servers[0]
+		if portSpec := serverSpec.Variables["port"]; portSpec != nil {
+			portStr := portSpec.Default
+			if portSpec.Enum != nil {
+				portStr = portSpec.Enum[0]
+			}
+
+			port, err := strconv.Atoi(portStr)
+			if err != nil {
+				log.Warn().Msg("Failed to convert port, using 8080 instead.")
+				return 8080
+			} else {
+				return int16(port)
+			}
+		} else {
+			log.Warn().Msg("Failed to convert port, using 8080 instead.")
+			return 8080
+		}
+	} else {
+		log.Warn().Msg("Failed to convert port, using 8080 instead.")
+		return 8080
+	}
 }
 
 func publishFrontend(sourcePath string, destinationPath string) {
