@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"embed"
 	"errors"
-	"fmt"
 	"io/ioutil"
 	"os"
 	"regexp"
@@ -187,8 +186,6 @@ func addStaticFrontendFiles() []string {
 	if err != nil {
 		log.Error().Err(err).Msg("Failed to add static files for the frontend.")
 	}
-
-	fmt.Println(staticFiles)
 
 	return staticFiles
 }

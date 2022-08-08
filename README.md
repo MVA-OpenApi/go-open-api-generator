@@ -52,6 +52,8 @@ You can check how the file looks like <a href="https://github.com/MVA-OpenApi/go
 
 <b>Step 3: </b> We can now navigate to the output folder (in this case `build`) and run `go run main.go` to launch the REST API.
 
+<b>Step 4: </b> The React Frontend is available at 'server-url'/frontend the server documentation is available under 'server-url'/doc.
+
 ## Flags
 
 - `-o [Output path]`. Specifies the output path for the generated REST API.
