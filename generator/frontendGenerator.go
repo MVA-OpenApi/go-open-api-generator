@@ -4,6 +4,7 @@ import (
 	fs "go-open-api-generator/fileUtils"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
 
 	"github.com/getkin/kin-openapi/openapi3"
@@ -13,10 +14,20 @@ import (
 func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	generateOpenAPIDoc(conf)
 
+	// struct for the Axios config
+	type AxiosConfig struct {
+		BaseURL string
+		Port    int16
+	}
+
+	// initialize Axios Config
+	var AC AxiosConfig
+	AC.BaseURL = "http://localhost"
+	// get port
+	AC.Port = getServerPort(spec)
+
 	// create Schemas struct and add SchemaConfs (with name and properties) for schemas with x-label: form
 	schemas := createSchemas(spec)
-
-	//schemasWithMethods := addMethods(schemas)
 
 	// create folders
 	frontendPath := filepath.Join(conf.OutputPath, "frontend")
@@ -48,7 +59,7 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	createFileFromTemplate(filepath.Join(frontendStylesPath, "defaultpage.css"), "templates/frontend/src/styles/defaultpage.css.tmpl", nil)
 
 	// files in src directory
-	createFileFromTemplate(filepath.Join(frontendSrcPath, "api.js"), "templates/frontend/src/api.js.tmpl", nil)
+	createFileFromTemplate(filepath.Join(frontendSrcPath, "api.js"), "templates/frontend/src/api.js.tmpl", AC)
 	createFileFromTemplate(filepath.Join(frontendSrcPath, "index.js"), "templates/frontend/src/index.js.tmpl", nil)
 
 	// files in components directory
@@ -77,65 +88,51 @@ func generateFrontend(spec *openapi3.T, conf GeneratorConfig) {
 	}
 
 	log.Info().Msg("Created Frontend successfully.")
+
+	// npm build and moving the output folder +  delete frontend folder
+	publishFrontend(frontendPath, filepath.Join(conf.OutputPath, "public"))
 }
 
-// for each schema in schemas.List add CRUD Methods with RESTful best practice API endpoints
-/* func addMethods(schemas Schemas) (schemasWithMethods Schemas) {
-	schemasWithMethods = schemas
+// function to get the port specified in the OpenAPI Spec
+func getServerPort(spec *openapi3.T) (port int16) {
+	if spec.Servers != nil {
+		serverSpec := spec.Servers[0]
+		if portSpec := serverSpec.Variables["port"]; portSpec != nil {
+			portStr := portSpec.Default
+			if portSpec.Enum != nil {
+				portStr = portSpec.Enum[0]
+			}
 
-	for i := range schemasWithMethods.List {
-		tmpSchema := schemasWithMethods.List[i]
-		tmpSchemaMethods := make([]MethodConf, 0)
-		schemaURL := strings.ReplaceAll(strings.ToLower(tmpSchema.Name), " ", "")
-
-		// add GET with path /<schema name>
-		var getConf MethodConf
-		getConf.Type = "get"
-		getConf.Endpoint = schemaURL
-		getConf.BodySchemaRequired = false
-		tmpSchemaMethods = append(tmpSchemaMethods, getConf)
-
-		// add GET with path /<schema name>/:id
-		var getSpecificConf MethodConf
-		getSpecificConf.Type = "get"
-		getSpecificConf.Endpoint = schemaURL
-		getSpecificConf.PathParams = make(map[string]string)
-		getSpecificConf.PathParams["id"] = tmpSchema.Properties["id"]
-		getSpecificConf.BodySchemaRequired = false
-		tmpSchemaMethods = append(tmpSchemaMethods, getSpecificConf)
-
-		// add POST with path /<schema name>
-		var postConf MethodConf
-		postConf.Type = "post"
-		postConf.Endpoint = schemaURL
-		postConf.BodySchemaRequired = true
-		tmpSchemaMethods = append(tmpSchemaMethods, postConf)
-
-		// add PUT with path /<schema name>/:id
-		var putConf MethodConf
-		putConf.Type = "put"
-		putConf.Endpoint = schemaURL
-		putConf.PathParams = make(map[string]string)
-		putConf.PathParams["id"] = tmpSchema.Properties["id"]
-		putConf.BodySchemaRequired = true
-		tmpSchemaMethods = append(tmpSchemaMethods, putConf)
-
-		// add DELETE with path /<schema name>/:id
-		var deleteConf MethodConf
-		deleteConf.Type = "delete"
-		deleteConf.Endpoint = schemaURL
-		deleteConf.PathParams = make(map[string]string)
-		deleteConf.PathParams["id"] = tmpSchema.Properties["id"]
-		deleteConf.BodySchemaRequired = false
-		tmpSchemaMethods = append(tmpSchemaMethods, deleteConf)
-
-		schemasWithMethods.List[i].Methods = tmpSchemaMethods
-
+			port, err := strconv.Atoi(portStr)
+			if err != nil {
+				log.Warn().Msg("Failed to convert port, using 8080 instead.")
+				return 8080
+			} else {
+				return int16(port)
+			}
+		} else {
+			log.Warn().Msg("Failed to convert port, using 8080 instead.")
+			return 8080
+		}
+	} else {
+		log.Warn().Msg("Failed to convert port, using 8080 instead.")
+		return 8080
 	}
+}
 
-	return schemasWithMethods
+func publishFrontend(sourcePath string, destinationPath string) {
+	// run npm install
+	NPMInstall(sourcePath)
 
-} */
+	// run npm build
+	NPMBuild(sourcePath)
+
+	// move build folder to destinationPath
+	fs.MoveDir(filepath.Join(sourcePath, "build"), filepath.Join(destinationPath, "build"))
+
+	// delete frontend folder at source path
+	fs.DeleteFolderRecursively(sourcePath)
+}
 
 func createSchemas(spec *openapi3.T) (schemas Schemas) {
 	schemas.List = make([]SchemaConf, 0)
@@ -161,7 +158,6 @@ func createSchemas(spec *openapi3.T) (schemas Schemas) {
 			tmpSchemaPropertyNames := reflect.ValueOf(spec.Components.Schemas[tmpSchemaName].Value.Properties).MapKeys()
 			for j := range tmpSchemaPropertyNames {
 				tmpSchemaPropertyName := tmpSchemaPropertyNames[j].Interface().(string)
-				//schema.Properties[strings.Title(tmpSchemaPropertyName)] = spec.Components.Schemas[tmpSchemaName].Value.Properties[tmpSchemaPropertyName].Value.Type
 				var tmpPropertyConf PropertyConf
 				tmpPropertyConf.Name = tmpSchemaPropertyName
 				tmpPropertyConf.LabelName = strings.Title(tmpSchemaPropertyName)
@@ -194,7 +190,7 @@ func generateOpenAPIDoc(conf GeneratorConfig) {
 		GeneratorConfig
 		OpenAPIFile string
 	}
-	path := filepath.Join(conf.OutputPath, "public")
+	path := filepath.Join(conf.OutputPath, "public", "doc")
 	fs.GenerateFolder(path)
 
 	template := templateConfig{

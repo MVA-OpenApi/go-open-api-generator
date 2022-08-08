@@ -17,8 +17,8 @@ function App() {
         </Grid>
         <Grid item xs={12} md={10} lg={8}>
           <Routes>
-            {{ if .IsNotEmpty}}<Route path="/" element={<Navigate replace to="{{ (index .List 0).Name }}" />} />{{ else }}<Route path="/" element={<DefaultPage />} />{{end}}
-            {{ with .List }}{{range . }}<Route path="{{ .Name }}" element={<{{ .ComponentName }} />} />{{ end  }}{{ end }}
+            {{ if .IsNotEmpty}}<Route path="/frontend" element={<Navigate replace to="/frontend/{{ (index .List 0).Name }}" />} />{{ else }}<Route path="/frontend" element={<DefaultPage />} />{{end}}
+            {{ with .List }}{{range . }}<Route path="/frontend/{{ .Name }}" element={<{{ .ComponentName }} />} />{{ end  }}{{ end }}
           </Routes>
         </Grid>
       </Grid>

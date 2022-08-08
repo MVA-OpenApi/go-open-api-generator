@@ -32,6 +32,7 @@ type ServerConfig struct {
 	ModuleName  string
 	OpenAPIName string
 	Flags
+	StaticFiles []string
 }
 
 type ResponseConfig struct {

@@ -58,11 +58,11 @@ func GenerateServer(conf GeneratorConfig) error {
 
 	createProjectPathDirectory(conf)
 
+	generateFrontend(spec, conf)
+
 	serverConf := generateServerTemplate(spec, conf)
 
 	generateConfigFiles(serverConf)
-
-	generateFrontend(spec, conf)
 
 	if conf.UseLifecycle {
 		generateLifecycleFiles(spec)
@@ -156,6 +156,9 @@ func generateServerTemplate(spec *openapi3.T, generatorConf GeneratorConfig) (se
 		log.Info().Msg("Using HTTP/2 as default protocol")
 	}
 
+	// get filenames and relative paths of frontend related files and store them in the config to serve them inside main.go
+	conf.StaticFiles = addStaticFrontendFiles()
+
 	fileName := "main.go"
 	filePath := filepath.Join(config.Path, fileName)
 	templateFile := "templates/server.go.tmpl"
@@ -164,6 +167,27 @@ func generateServerTemplate(spec *openapi3.T, generatorConf GeneratorConfig) (se
 	createFileFromTemplate(filePath, templateFile, conf)
 
 	return conf
+}
+
+// function to get the filenames and paths of the static files generated from npm run-script build
+func addStaticFrontendFiles() []string {
+	staticFiles := make([]string, 0)
+
+	err := filepath.Walk(filepath.Join(config.Path, "public", "build"), func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			log.Error().Err(err).Msg("Failed to add static files for the frontend.")
+			return err
+		}
+		if !info.IsDir() && strings.Contains(path, "static") {
+			staticFiles = append(staticFiles, "/static"+strings.ReplaceAll(strings.Split(path, "static")[1], "\\", "/"))
+		}
+		return nil
+	})
+	if err != nil {
+		log.Error().Err(err).Msg("Failed to add static files for the frontend.")
+	}
+
+	return staticFiles
 }
 
 func generateHandlerFuncStub(op *openapi3.Operation, method string, path string, apiSecurityName string) (OperationConfig, error) {
